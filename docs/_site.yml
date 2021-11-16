@@ -7,4 +7,8 @@ navbar:
       href: index.html
     - text: "Other"
       href: other.html
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
 
