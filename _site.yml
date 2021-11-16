@@ -15,7 +15,7 @@ navbar:
       icon: fa-github
 output:
   rmdformats::downcute:
-    self_contained: false
+    self_contained: true
     css: style.css 
     code_folding: hide
 out_dir: "docs"
