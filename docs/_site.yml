@@ -1,0 +1,10 @@
+
+name: "More-Modelling-Recipes"
+navbar:
+  title: "More-Modelling-Recipes"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Other"
+      href: other.html
+
