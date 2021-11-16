@@ -1,7 +1,7 @@
 
-name: "my-website"
+name: "Recipes"
 navbar:
-  title: "My Website"
+  title: "Recipes"
   type: inverse
   left:
     - text: "Home"
@@ -18,4 +18,5 @@ output:
     self_contained: false
     css: style.css 
     code_folding: hide
+out_dir: "docs"
 

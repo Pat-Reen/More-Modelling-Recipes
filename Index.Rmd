@@ -2,6 +2,8 @@
 title: "More modelling recipes"
 subtitle: "With (life) insurance data"
 author: "[Pat Reen](https://www.linkedin.com/in/patrick-reen/)"
+config: rmarkdown:::site_config("docs/_site.yml", encoding)
+knit: (function(input_file, encoding) {out_dir <- 'docs';rmarkdown::render(input_file,encoding=encoding, output_file=file.path(dirname(input_file), out_dir,'index.html'))})
 ---
 
 # Overview {.tabset .tabset-fade .tabset-pills}
