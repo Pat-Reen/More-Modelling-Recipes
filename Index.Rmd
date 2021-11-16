@@ -1,6 +1,5 @@
 ---
 title: "Modelling recipes"
-knit: (function(input_file, encoding) {out_dir <- 'docs';rmarkdown::render(input_file,encoding=encoding, output_file=file.path(dirname(input_file), out_dir,'index.html'))})
 subtitle: "With (life) insurance data"
 author: "[Pat Reen](https://www.linkedin.com/in/patrick-reen/)"
 output: 
@@ -9,7 +8,8 @@ output:
         in_header: docs\header.html
     self_contained: false
     code_folding: hide
-link-citations: yes
+output_dir: docs
+
 ---
 
 ```{r Site, echo=FALSE}
@@ -25,6 +25,10 @@ navbar:
       href: index.html
     - text: "Other"
       href: other.html
+output:
+  html_document:
+    theme: spacelab
+    highlight: textmate
 ')
 
 readr::write_lines(FileText, file = "docs/_site.yml")
