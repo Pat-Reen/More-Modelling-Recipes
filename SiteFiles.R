@@ -20,6 +20,7 @@ output:
     self_contained: false
     css: style.css 
     code_folding: hide
+out_dir: "/docs"
 ')
 
 readr::write_lines(FileText, file = "docs/_site.yml")
