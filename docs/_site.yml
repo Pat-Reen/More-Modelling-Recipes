@@ -1,14 +1,21 @@
 
-name: "More-Modelling-Recipes"
+name: "my-website"
 navbar:
-  title: "More-Modelling-Recipes"
+  title: "My Website"
+  type: inverse
   left:
     - text: "Home"
       href: index.html
     - text: "Other"
       href: other.html
+  right:
+    - href: https://www.linkedin.com/in/patrick-reen/
+      icon: fa-linkedin
+    - href: https://github.com/Pat-Reen/
+      icon: fa-github
 output:
-  html_document:
-    theme: spacelab
-    highlight: textmate
+  rmdformats::downcute:
+    self_contained: false
+    css: style.css 
+    code_folding: hide
 
