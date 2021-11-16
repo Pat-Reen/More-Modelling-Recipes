@@ -17,13 +17,13 @@ navbar:
       icon: fa-github
 output:
   rmdformats::downcute:
-    self_contained: false
+    self_contained: true
     css: style.css 
     code_folding: hide
-out_dir: "/docs"
+out_dir: "docs"
 ')
 
-readr::write_lines(FileText, file = "docs/_site.yml")
+readr::write_lines(FileText, file = "_site.yml")
 
 # Create css
 
@@ -45,18 +45,5 @@ body{
 }
 ')
 
-readr::write_lines(FileText, file = "docs/style.css")
+readr::write_lines(FileText, file = "/style.css")
 
-# Create other
-
-FileText<- paste0('
-
----
-title: "About This Website"
----
-
-More about this website.
-
-')
-
-readr::write_lines(FileText, file = "docs/other.html")
