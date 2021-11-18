@@ -1,0 +1,223 @@
+---
+title: "Modelling recipes"
+knit: (function(input_file, encoding) {out_dir <- 'docs';rmarkdown::render(input_file,encoding=encoding, output_file=file.path(dirname(input_file), out_dir,'index.html'))})
+subtitle: "With (life) insurance data"
+author: "[Pat Reen](https://www.linkedin.com/in/patrick-reen/)"
+output: 
+  rmdformats::downcute:
+    includes: 
+        in_header: docs\header.html
+    self_contained: false
+    code_folding: hide
+bibliography: references.bib 
+link-citations: yes
+---
+
+```{css, echo=FALSE}
+#toc {
+  background: url("img/image.png");
+  background-size: contain 20%;
+  padding-top: 200px;
+  background-repeat: no-repeat;
+}
+```
+
+```{r htmlHeader, echo=FALSE}
+# Create the external file
+
+htmlhead <- paste0('
+
+<!-- Add icon library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!-- Add icon font -->
+<p style="position:absolute; top:0; right:20px; ">
+    <a href="https://www.linkedin.com/in/patrick-reen/" class="fa fa-linkedin" style="font-size:24px"></a>
+    <a href="https://github.com/Pat-Reen/" class="fa fa-github" style="font-size:24px"></a>
+</p>
+
+')
+
+readr::write_lines(htmlhead, file = "docs/header.html")
+```
+
+
+```{r Termination Modelling, class.source = 'fold-show'}
+# select all claims
+df_term <- df %>% filter(inc_count_tot >0) 
+
+# add dummy claim duration data. Duration (i.e. in days) is usually considered following an exponential distribution but in our recent study it follows a gamma distribution better. To simplify, here we use exponential distribution CDF to back solve the x. Assume lambda is 1/180 so that the average claim duration is 180 days.
+# simple random is not so reasonable, better to use function with age factored in.
+df_term <- df_term %>% 
+  mutate(term_day = case_when(age <= 45 ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/90)),
+                              age <= 50 ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/180)),
+                                   TRUE ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/360))
+                              ))
+
+plot(df_term$age, df_term$term_day, xlab = "AGE", ylab = "Time to Recover (Days)")
+
+require(rpart)
+require(rpart.plot)
+require(latticeExtra)
+ageGroup_split <- rpart(term_day ~ age,
+                        data = df_term,
+                        control = rpart.control(xval=5, minbucket=4, cp=0.0005))
+
+ageGroup_split$method
+plotcp(ageGroup_split, minline=TRUE)
+rpart.plot(ageGroup_split)
+printcp(ageGroup_split)
+
+# increase cp the learning rate to prune the trees
+ageGroup_pruned <- prune(ageGroup_split, cp=0.005)
+rpart.plot(ageGroup_pruned)
+
+# divide into less groups to keep more obs in each group for distribution fitting
+df_term <- df_term %>% mutate(ageGroup = as.factor(case_when(age < 46 ~ "<= 45",
+                                                             age < 51 ~ "46 - 50",
+                                                                 TRUE ~ ">= 51")))
+
+summary(df_term$ageGroup)
+
+for (age_grp in c("<= 45","46 - 50", ">= 51")) {
+    df_term_loop <- df_term %>% filter(ageGroup == age_grp)
+    hist(df_term_loop$term_day, breaks = 200, prob = T, xlab = "Time to Recover (Days)", ylab = "Probability", 
+         main = paste0("Distribution for age ", age_grp), col = "lightblue", border = "lightblue")
+    
+    # fit gamma distribution
+    Shape <- as.vector(fitdistr(df_term_loop$term_day, "gamma", start=list(shape=1, rate=0.005))$estimate)[1]
+    Rate <- as.vector(fitdistr(df_term_loop$term_day, "gamma", start=list(shape=1, rate=0.005))$estimate)[2]    
+    points(df_term_loop$term_day, dgamma(df_term_loop$term_day, shape = Shape, rate = Rate), col = "tomato")
+    
+    # kernel density estimation
+    # Silverman, B.W. (1986). Density Estimation for Statistics and Data Analysis. London: Chapman & Hall/CRC. p. 45. ISBN 978-0-412-24620-3.
+    h <- 0.9 * min(sqrt(var(df_term_loop$term_day)), IQR(df_term_loop$term_day)/1.34) *length(df_term_loop$term_day)^(-1/5)
+    lines(density(df_term_loop$term_day, bw = h), lwd = 2)
+    
+    legend("topleft", legend = c("Kernel Density", "Gamma distribution"), pch = c(NA,1), lty = c(1,NA),
+           cex = 0.75, inset=c(0.3, 0.1), col = c("black", "tomato"))
+  
+    legend("topright", legend = c(paste0("Actual mean = ", round(mean(y),6)),
+                                   paste0("Kernel mean = ", round(mean(density(df_term_loop$term_day)$y),6)), 
+                                   paste0("Gamma mean = ", round(mean(dgamma(df_term_loop$term_day, 
+                                                                                         shape = Shape, rate = Rate)),6))),
+           cex = 0.75, bty = "n")
+
+    legend("topright", legend = c(paste0("Actual variance = ", round(var(y),10)),
+                                   paste0("Kernel variance = ",round(var(density(df_term_loop$term_day)$y),10)), 
+                                   paste0("Gamma variance = ",round(var(dgamma(df_term_loop$term_day, 
+                                                                                           shape = Shape, rate = Rate)),10))),
+           cex = 0.75, inset=c(0, 0.2), bty = "n")
+  }
+
+
+
+```
+
+
+```{r xgboost for incidence prediction}
+library(mlr3)
+library(xgboost)
+
+samp_cv <- sample(1:nrow(df_test),100000)
+df_cv <- df_test[samp_cv,]
+df_test2 <- df_test[-samp_cv,]
+
+# One hot encoding
+train_label <- df_train$inc_count_tot
+cv_label <- df_cv$inc_count_tot
+test_label <- df_test2$inc_count_tot
+
+new_train <- model.matrix(inc_count_tot  ~ 
+                        cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_train)
+
+new_cv <- model.matrix(inc_count_tot  ~ 
+                        cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_cv)
+
+new_test <- model.matrix(inc_count_tot  ~ 
+                        cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_test2)
+
+
+# prepare matrix 
+DM_train <- xgb.DMatrix(data = new_train, label = train_label) 
+DM_cv <- xgb.DMatrix(data = new_cv, label = cv_label)
+DM_test <- xgb.DMatrix(data = new_test, label = test_label)
+
+# default hyper-parameters. Given the dataset is very imbalanced, we use 'scale_pos_weight' to re-balance it which is the number of negative observations (i.e. "0") over the number of positive observations (i.e. "1").
+params <- list(booster = "gbtree"
+               , objective = "binary:logistic"
+               , eta=0.1
+               , gamma=0
+               , max_depth=6
+               , min_child_weight=1
+               , subsample=1
+               , colsample_bytree=1
+               , scale_pos_weight=4475/24)
+
+
+# xgb training with watchlist to show cross-validation
+xgb1 <- xgb.train(params = params, data = DM_train, nrounds = 10000, watchlist = list(train=DM_train, val=DM_cv)
+                   ,print_every_n = 10
+                   ,early_stopping_rounds = 100
+                   ,maximize = F, eval_metric = "error")
+
+summary(xgb1)
+xgb_pred1 <- predict (xgb1, DM_test)
+
+require(caret)
+confusionMatrix(as.factor(as.numeric(xgb_pred1 >0.5)), as.factor(test_label))
+
+require(pROC)
+test_roc = roc(test_label ~ xgb_pred1, plot = TRUE, print.auc = TRUE)
+
+
+# xgb.cv module automatically divides the data into 'nfold' and performs cross-validation, thus to reduce over-fitting
+xgbcv <- xgb.cv(params = params, data = DM_train
+                 , nrounds = 10000
+                 , nfold = 5
+                 , showsd = T
+                 , stratified = T
+                 , print_every_n = 10
+                 , early_stopping_rounds = 50
+                 , maximize = F, eval_metric = "error")
+
+summary(xgbcv)
+```
+
+
+
+
+
+
+
+
+
+
+
