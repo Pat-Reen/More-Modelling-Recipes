@@ -1,0 +1,12 @@
+{
+  "articles": [
+    {
+      "path": "index.html",
+      "title": "More modelling recipes",
+      "author": [],
+      "contents": "\r\n\r\n\r\n\r\n",
+      "last_modified": "2021-11-19T07:07:47+11:00"
+    }
+  ],
+  "collections": ["posts/posts.json"]
+}

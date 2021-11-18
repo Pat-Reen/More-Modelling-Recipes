@@ -1,22 +1,25 @@
 
-name: "Recipes"
+name: "More modelling recipes"
+title: "More modelling recipes"
+preview: img/logo.png
+description: |
+  Exploring simple reproducible modelling and visualisation recipes.
+base_url: https://pat-reen.github.io/More-Modelling-Recipes/
+theme: main.css 
 navbar:
-  title: "Recipes"
-  type: inverse
-  left:
+  logo: img/logo.png
+  search: false
+  right:
     - text: "Home"
       href: index.html
-    - text: "Other"
-      href: other.html
-  right:
-    - href: https://www.linkedin.com/in/patrick-reen/
-      icon: fa-linkedin
-    - href: https://github.com/Pat-Reen/
-      icon: fa-github
-output:
-  rmdformats::downcute:
-    self_contained: true
-    css: style.css 
-    code_folding: hide
-out_dir: "docs"
+    - icon: fab fa-linkedin
+      href: https://www.linkedin.com/in/patrick-reen/
+    - icon: fab fa-github
+      href: https://github.com/Pat-Reen
+output_dir: "docs"
+output: distill::distill_article
+collections:
+  posts:
+    share: [twitter, linkedin]
+    citations: false
 

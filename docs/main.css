@@ -1,0 +1,44 @@
+
+
+.distill-site-header .logo img {
+    display: inline-block;
+    width: 100px;
+    height: 100px;
+    max-height: 100px;
+}
+
+.posts-list-caption {
+    display: none;
+}
+
+.distill-site-header {
+    height: 100px;
+}
+
+.distill-site-header .title {
+position: relative;
+transform: translateY(-70%);
+}
+
+.distill-site-header .nav-right {
+    top: 25%;
+    position: relative;
+}
+
+d-title{
+  margin-top: 50px;
+}
+
+.distill-site-header {
+  --title-size:       30px;  
+  --text-size:        15px;
+  --bkgd-color:       #010101;
+}
+
+
+home.title{
+    visibility: hidden;
+}
+
+
+
