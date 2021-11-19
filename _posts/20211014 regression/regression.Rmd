@@ -11,13 +11,13 @@ tags:
   - regression
   - transformations
   - insurance
-preview: ..\20211014 regression\preview.png
+preview: preview.png
 date: 2021-10-14
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: true
+    self_contained: false
     code_folding: true
 bibliography: references.bib 
 link-citations: yes
@@ -173,7 +173,6 @@ df$inc_amount_tot =  df$inc_count_tot * df$sum_assured
 ```
 
 ## Grouped data
-
 The data generated above are records for each individual policy, however data like this is often grouped as it is easier to store and computation is easier [@GLM_Insurance, p49, 105]. Later we will consider the differences between a model on ungrouped vs grouped data.
 
 ```{r Grouped Data}
@@ -184,11 +183,14 @@ summarise(sum_assured=sum(sum_assured),inc_count_sick_exp=sum(inc_sick_expected)
 ```
 
 Check that the exposure for the grouped data is the same as the total on ungrouped:
+
 ```{r Grouped Data - exposure}
 # check count - same as total row count of the main df
 sum(df_grp$exposure)
 ```
+
 And that the number of rows of data are significantly lower:
+
 ```{r Grouped Data - row count}
 # number of rows of the grouped data is significantly lower
 nrow(df_grp)
@@ -223,6 +225,7 @@ prop.table(table(df$sex))
 ```
 
 We can then convert the columns to factors based upon the values of the column and ordering by frequency. Base level should be chosen such that it has sufficient observations for an intercept to be computed meaningfully.
+
 ```{r Factorise columns - factors, class.source = 'fold-show'}
 df$sex <- factor(df$sex, levels = c("m","f","u"))
 df$smoker <- factor(df$smoker, levels = c("n","s","u"))
@@ -239,6 +242,7 @@ df_grp$occupation <- factor(df_grp$occupation, labels = c("prof", "sed","techn",
 ```
 
 If the column is already a factor, you can extract the levels to show what order they will be used in our models
+
 ```{r Factorise columns - levels, class.source = 'fold-show'}
 levels(df$sex)
 ```
@@ -739,6 +743,7 @@ summary(model_2)
 ```
 
 Adding more response variables: When deciding on explanatory variables to model, consider the properties of the data (like correlation or colinearity). 
+
 ```{r Logistic regression - more variables, class.source = 'fold-show'}
 model_3 <- glm(inc_count_sick~age+policy_year+sex+waiting_period,data=df_train,family=binomial(link="logit")) 
 summary(model_3)
@@ -815,6 +820,7 @@ tidy(model_4) %>% kbl(caption = "Modeled result - grouped data")
 model_5 <- glm(inc_count_sick~age+sex,data=df,family=binomial(link="logit")) 
 tidy(model_5) %>% kbl(caption = "Modeled result - ungrouped data")
 ```
+
 ### Offsets
 When the data are grouped, it is important to consider the level of exposure in a given group. This can be achieved with an [offset](https://towardsdatascience.com/offsetting-the-model-logic-to-implementation-7e333bc25798) term (@GLM_Insurance, p66-67). This is important in an insurance context where we are often interested in modelling rates of claim. 
 
@@ -825,7 +831,6 @@ tidy(model_6)
 model_7 <- glm(inc_amount_tot~age+sex,data=df_grp_filtered) 
 tidy(model_7)
 ```
-
 
 ## Actuals or AvE?
 The models we have fitted above are based upon actual claim incidences. We can consider the difference between some expected claim rate (e.g. from a standard table) and the actuals. 
