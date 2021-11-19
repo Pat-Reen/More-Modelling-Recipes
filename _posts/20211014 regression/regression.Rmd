@@ -11,14 +11,14 @@ tags:
   - regression
   - transformations
   - insurance
-preview: preview.png
+preview: ..\20211014 regression\preview.png
 date: 2021-10-14
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
     self_contained: true
-    code_folding: hide
+    code_folding: true
 bibliography: references.bib 
 link-citations: yes
 ---
@@ -66,7 +66,7 @@ library(MASS)       # statistics
 
 ```
 
-```{r Setup - remove object if exists, class.source = 'fold-show', warning = FALSE, echo=FALSE, results = FALSE, message=FALSE}
+```{r Setup - remove object if exists, class.source = 'fold-show', warning = FALSE, echo=FALSE, results = FALSE, message=FALSE, include=FALSE}
 ifrm <- function(x, env = globalenv()) 
 {
   if(exists(x, envir = env)) 

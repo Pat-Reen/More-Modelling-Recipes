@@ -31,7 +31,7 @@
       <description>This article sets out a simple recipe for visualising Australian life industry data from APRA using Tableau.</description>
       <guid>https://pat-reen.github.io/More-Modelling-Recipes/posts/20211108 life_stats</guid>
       <pubDate>Mon, 08 Nov 2021 00:00:00 +0000</pubDate>
-      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211108 life_stats/preview.png" medium="image" type="image/png" width="697" height="673"/>
+      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211108 life_stats/..\20211108 life_stats\preview.png" medium="image" type="image/png" width="697" height="673"/>
     </item>
     <item>
       <title>Network graphs</title>
@@ -40,7 +40,7 @@
       <description>This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana.</description>
       <guid>https://pat-reen.github.io/More-Modelling-Recipes/posts/20211026 network_diagram</guid>
       <pubDate>Tue, 26 Oct 2021 00:00:00 +0000</pubDate>
-      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211026 network_diagram/preview.png" medium="image" type="image/png" width="691" height="693"/>
+      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211026 network_diagram/..\20211026 network_diagram\preview.png" medium="image" type="image/png" width="691" height="693"/>
     </item>
     <item>
       <title>Data transformations and regression modelling</title>
@@ -49,7 +49,7 @@
       <description>This article sets out a few practical recipes for modelling with (life) insurance data. Insurance events are typically of low probability - these recipes consider some of   the limitations of "small data" model fitting (where the observations of interest are sparse) and other topics for insurance like comparisons to standard tables.</description>
       <guid>https://pat-reen.github.io/More-Modelling-Recipes/posts/20211014 regression</guid>
       <pubDate>Thu, 14 Oct 2021 00:00:00 +0000</pubDate>
-      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211014 regression/preview.png" medium="image" type="image/png" width="766" height="480"/>
+      <media:content url="https://pat-reen.github.io/More-Modelling-Recipes/posts/20211014 regression/..\20211014 regression\preview.png" medium="image" type="image/png" width="766" height="480"/>
     </item>
   </channel>
 </rss>
