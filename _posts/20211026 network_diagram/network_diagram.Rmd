@@ -2,7 +2,7 @@
 title: "Network graphs"
 subtitle: "With Nirvana"
 description: | 
-  This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana. 
+  This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana.
 author:
   - name: Pat Reen 
     url: https://www.linkedin.com/in/patrick-reen/
@@ -10,13 +10,14 @@ tags:
   - dataanalytics
   - network
   - visualisations
-preview: ..\20211026 network_diagram\preview.png
+theme: main.css 
+preview: preview.png
 date: 2021-10-26
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: true
+    self_contained: false
     code_folding: true
 ---
 
@@ -29,7 +30,13 @@ The inspiration for this approach to network charts came from [this example](htt
 
 See link above to GitHub repository which has data and tableau workbook for this recipe.
 
-# What is a network chart
+# The result
+
+A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/Nirvana_16351886101480/Nirvana?publish=yes)
+
+![](preview.png)
+
+# What is a network chart?
 A visual representation of a network. It comprises nodes (points in the graph) and edges (lines joining the points).
 
 # Structuring data for Gephi

@@ -11,13 +11,13 @@ tags:
   - APRA
   - lifeinsurance
   - visualisations
-preview: ..\20211108 life_stats\preview.png
+preview: preview.png
 date: 2021-11-08
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: true
+    self_contained: false
     code_folding: true
 ---
 
@@ -31,10 +31,16 @@ See link above to GitHub repository which has data and tableau workbook for this
 # Introducing radial bar charts
 A radial bar chart is a bar chart plotted in polar co-ordinates rather than a Cartesian plane. [This site](https://www.thedataschool.co.uk/jack-parry/create-a-radial-bar-chart-in-tableau) sets out a very simple approach, which I have used here.
 
+# The result
+
+A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/AustralianLifeInsuranceReporting/LifeStats)
+
+![](LifeStats.png)
+
 # Using r to view industry stats
 As with most data sources, an alternative visualisation tool is r. The below extracts the individual disability income 
 
-```{r Industry stats in r, class.source = 'fold-show', warning = FALSE, message=FALSE}
+```{r Industry stats in r, message=FALSE, warning=FALSE, class.source='fold-show'}
 # this script reads in the APRA data and produces a few graphs for presentation
 
 packages <- c("tidyverse", "ggplot2", "readxl", "lubridate", "scales", "xtable")

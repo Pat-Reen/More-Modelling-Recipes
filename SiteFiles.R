@@ -2,7 +2,7 @@
 
 FileText <- paste0('
 name: "More modelling recipes"
-title: "More modelling recipes"
+title: "More recipes"
 preview: img/logo.png
 description: |
   Exploring simple reproducible modelling and visualisation recipes.
@@ -64,12 +64,6 @@ d-title{
 .distill-site-header {
   --bkgd-color:       #010101;
 }
-
-
-home.title{
-    visibility: hidden;
-}
-
 
 ')
 

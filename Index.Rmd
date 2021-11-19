@@ -1,5 +1,6 @@
 ---
 title: "More modelling recipes"
+Preview: img\image.png
 site: distill::distill_website
 listing: posts
 ---
