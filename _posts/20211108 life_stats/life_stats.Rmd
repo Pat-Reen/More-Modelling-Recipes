@@ -11,14 +11,14 @@ tags:
   - APRA
   - lifeinsurance
   - visualisations
-preview: preview.png
+preview: ..\20211108 life_stats\preview.png
 date: 2021-11-08
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
     self_contained: true
-    code_folding: hide
+    code_folding: true
 ---
 
 # Background 

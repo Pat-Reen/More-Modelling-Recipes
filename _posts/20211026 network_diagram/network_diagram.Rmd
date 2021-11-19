@@ -10,14 +10,14 @@ tags:
   - dataanalytics
   - network
   - visualisations
-preview: preview.png
+preview: ..\20211026 network_diagram\preview.png
 date: 2021-10-26
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
     self_contained: true
-    code_folding: hide
+    code_folding: true
 ---
 
 # Background 
@@ -41,11 +41,11 @@ Our data looks like the below - a record for each band member for a given iterat
 
 From this data we create two additional tables. The "nodes" table contains each row's ID and its Node (the same value as the ID):
 
-![](img\Data_nodes.png)
+![](img\Data_nodes.png){width=40%}
 
 The "edges" table contains each row's ID its parent or Target ID:
 
-![](img\Data_edges.png)
+![](img\Data_edges.png){width=40%}
 
 This is all that Gephi needs (note: Gephi needs the tables as values). 
 
@@ -67,11 +67,11 @@ Load the edges data into the same workspace as an "Edges" table.
 
 You should get something that looks like this in the "Overview" page:
 
-![](img\Gephi_Raw.png) 
+![](img\Gephi_Raw.png){width=60%}
 
 Then, the magic of Gephi - the "layout" options will space out the points and edges considering the relationships you have specified. There are various layouts that suit different data and they can be tailored e.g. to space points further from each other or space dependent on the number of related points etc. In the end you might get something that looks like this:
 
-![](img\Gephi_Layout.png) 
+![](img\Gephi_Layout.png){width=80%}
 
 # Exporting data
 You can then export the data. It is exported as a ".gexf" which can be opened in excel as a ".XML" file. Extract the X and Y points and join to your data - and there you have it - network points for Tableau.
