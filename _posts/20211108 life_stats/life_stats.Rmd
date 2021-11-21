@@ -11,13 +11,13 @@ tags:
   - APRA
   - lifeinsurance
   - visualisations
-preview: preview.png
+preview: img\prev_life.png
 date: 2021-11-08
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: false
+    self_contained: true
     code_folding: true
 ---
 
@@ -33,9 +33,9 @@ A radial bar chart is a bar chart plotted in polar co-ordinates rather than a Ca
 
 # The result
 
-A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/AustralianLifeInsuranceReporting/LifeStats)
+A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/AustralianLifeInsuranceReporting/LifeStats).
 
-![](LifeStats.png)
+![](prev_life.png)
 
 # Using r to view industry stats
 As with most data sources, an alternative visualisation tool is r. The below extracts the individual disability income 

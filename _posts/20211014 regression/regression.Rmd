@@ -11,13 +11,13 @@ tags:
   - regression
   - transformations
   - insurance
-preview: preview.png
+preview: img\prev_regression.png
 date: 2021-10-14
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: false
+    self_contained: true
     code_folding: true
 bibliography: references.bib 
 link-citations: yes

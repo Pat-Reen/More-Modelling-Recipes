@@ -11,13 +11,13 @@ tags:
   - network
   - visualisations
 theme: main.css 
-preview: preview.png
+preview: img\prev_network.png
 date: 2021-10-26
 output:
   distill::distill_article: 
     toc: true
     toc_float: true
-    self_contained: false
+    self_contained: true
     code_folding: true
 ---
 
@@ -32,9 +32,9 @@ See link above to GitHub repository which has data and tableau workbook for this
 
 # The result
 
-A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/Nirvana_16351886101480/Nirvana?publish=yes)
+A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/Nirvana_16351886101480/Nirvana?publish=yes).
 
-![](preview.png)
+![](img/prev_network.png)
 
 # What is a network chart?
 A visual representation of a network. It comprises nodes (points in the graph) and edges (lines joining the points).
