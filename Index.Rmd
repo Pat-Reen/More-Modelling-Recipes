@@ -12,7 +12,6 @@ meta() %>%
     description =  "Exploring a few simple and reproducible modelling and data visualisation recipes."
   ) %>% 
   meta_social(
-    title = "More recipes",
     url = "https://pat-reen.github.io/More-Modelling-Recipes/",
     image = "img/image.png",
     og_type = "website",

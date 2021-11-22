@@ -1874,33 +1874,33 @@ d-appendix {
 </style>
 <style type="text/css">
 
-.distill-site-header .logo img {
-    display: inline-block;
-    width: 100px;
-    height: 100px;
-    max-height: 100px;
-}
-
 .posts-list-caption {
     display: none;
 }
 
 .distill-site-header {
-  --bkgd-color:       #010101;
+  --bkgd-color:     #010101;
+  --title-size:     25px;
+  --text-size:      20px;
 }
 
-.distill-site-header .title {
-position: relative;
-transform: translateY(-70%);
+.distill-site-header .logo img {
+    float: left;
+    width: 100px;
+    height: 100px;
+    max-height: 100px;
 }
 
 .distill-site-header .nav-right {
-    top: 25%;
-    position: relative;
+    float: right;
+    display: flex;
+    justify-content: space-around;
 }
 
-.distill-site-header {
-    height: 100px;
+.distill-site-header .title {
+        float: left;
+    display: flex;
+
 }
 
 

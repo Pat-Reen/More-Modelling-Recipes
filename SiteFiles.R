@@ -1,7 +1,7 @@
 # Create site.yml
 
 FileText <- paste0('
-name: "Modelling and data visualisation recipes"
+name: "More-recipes"
 title: "More recipes"
 base_url: https://pat-reen.github.io/More-Modelling-Recipes/
 theme: main.css 
@@ -31,43 +31,35 @@ readr::write_lines(FileText, file = "_site.yml")
 
 FileText <- paste0('
 
-.distill-site-header .logo img {
-    display: inline-block;
-    width: 100px;
-    height: 100px;
-    max-height: 100px;
-}
-
 .posts-list-caption {
     display: none;
 }
 
 .distill-site-header {
-    height: 100px;
+  --bkgd-color:     #010101;
+  --title-size:     25px;
+  --text-size:      20px;
 }
 
-.distill-site-header .title {
-position: relative;
-transform: translateY(-70%);
+.distill-site-header .logo img {
+    float: left;
+    width: 100px;
+    height: 100px;
+    max-height: 100px;
 }
 
 .distill-site-header .nav-right {
-    top: 25%;
-    position: relative;
+    float: right;
+    display: flex;
+    justify-content: space-around;
 }
 
-d-title{
-  margin-top: 50px;
+.distill-site-header .title {
+    float: left;
+    display: flex;
+
 }
 
-.distill-site-header {
-  --bkgd-color:       #010101;
-}
-
-@media print {
-  .distill-site-nav {
-    display: none;
-  }
 
 ')
 
