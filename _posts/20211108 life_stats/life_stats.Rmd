@@ -11,8 +11,7 @@ categories:
   - APRA
   - lifeinsurance
   - visualisations
-preview: img\prev_life_short.png
-image: img\prev_life_short.png
+preview: img/prev_life_short.png
 date: 2021-11-08
 output:
   distill::distill_article: 

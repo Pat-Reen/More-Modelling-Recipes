@@ -43,23 +43,26 @@ FileText <- paste0('
 
 .distill-site-header .logo img {
     float: left;
+    padding: 5px 5px 5px 0px;
     width: 100px;
     height: 100px;
     max-height: 100px;
 }
 
-.distill-site-header .nav-right {
-    float: right;
-    display: flex;
-    justify-content: space-around;
-}
-
-.distill-site-header .title {
+.distill-site-header a, .distill-site-header .title {
     float: left;
-    display: flex;
+    padding: 45px 10px 10px 10px;
 
 }
 
+@media screen and (min-width: 320px) and (max-width: 1024px){
+  .distill-site-header a, .distill-site-header .title {
+      padding: 0px 0px 0px 0px;
+  }
+  .distill-site-header .logo img {
+      padding: 0px 0px 0px 0px;
+  }
+}
 
 ')
 
