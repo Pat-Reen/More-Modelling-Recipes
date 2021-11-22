@@ -42,49 +42,4 @@ d-title{
   }
 }
 
-@media screen and (max-width: 768px) {
-  .distill-site-header a, .distill-site-header .nav-dropdown  {display: none;}
-  .distill-site-header a.nav-toggle {
-    float: right;
-    display: block;
-  }
-  .distill-site-header .title {
-    margin-left: 0;
-  }
-  .distill-site-header .nav-right {
-    margin-right: 0;
-  }
-  .distill-site-header {
-    overflow: hidden;
-  }
-  .nav-right .nav-dropdown-content {
-    margin-left: 0;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .distill-site-header.responsive {position: relative; min-height: 500px; }
-  .distill-site-header.responsive a.nav-toggle {
-    position: absolute;
-    right: 0;
-    top: 0;
-  }
-  .distill-site-header.responsive a,
-  .distill-site-header.responsive .nav-dropdown {
-    display: block;
-    text-align: left;
-  }
-  .distill-site-header.responsive .nav-left,
-  .distill-site-header.responsive .nav-right {
-    width: 100%;
-  }
-  .distill-site-header.responsive .nav-dropdown {float: none;}
-  .distill-site-header.responsive .nav-dropdown-content {position: relative;}
-  .distill-site-header.responsive .nav-dropdown .nav-dropbtn {
-    display: block;
-    width: 100%;
-    text-align: left;
-  }
-}
-
 

@@ -5,17 +5,4 @@ site: distill::distill_website
 listing: posts
 ---
 
-```{r, include=FALSE, results='asis'}
-library(metathis)
-
-meta() %>%
-  meta_social(
-    title = "More modelling recipes",
-    description = "Exploring simple reproducible modelling and visualisation recipes",
-    url = "https://pat-reen.github.io/More-Modelling-Recipes/",
-    image = "https://github.com/Pat-Reen/More-Modelling-Recipes/blob/c87c6240f05b673784c4021244f948c29ceb53c5/docs/img/image.png",
-    og_type = "website",
-    og_author = "Pat Reen",
-)
-```
 

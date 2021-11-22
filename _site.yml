@@ -1,16 +1,16 @@
 
-name: "More modelling recipes"
+name: "Modelling and data visualisation recipes"
 title: "More recipes"
-preview: img/logo.png
+image: img/image.png
 description: |
-  Exploring simple reproducible modelling and visualisation recipes.
+  Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository.
 base_url: https://pat-reen.github.io/More-Modelling-Recipes/
 theme: main.css 
 navbar:
   logo: img/logo.png
   search: false
   right:
-    - text: "Home"
+    - icon: fa-home
       href: index.html
     - icon: fab fa-linkedin
       href: https://www.linkedin.com/in/patrick-reen/
@@ -22,4 +22,6 @@ collections:
   posts:
     share: [twitter, linkedin]
     citations: false
+    categories: false
+    categories_metadata: true
 
