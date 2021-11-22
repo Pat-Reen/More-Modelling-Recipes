@@ -18,8 +18,6 @@
 }
 
 .distill-site-header a, .distill-site-header .title {
-    float: left;
-    display: flex;
     padding: 40px 10px 10px 10px;
 
 }
