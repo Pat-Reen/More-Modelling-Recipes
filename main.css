@@ -23,10 +23,10 @@
 
 }
 
-@media screen and (min-width: 1000px)
+@media screen and (min-width: 768px)
 
 .distill-site-header a, .distill-site-header .title {
-    padding: none;
+    padding: 0px 0px 0px 0px;
 
   
 
