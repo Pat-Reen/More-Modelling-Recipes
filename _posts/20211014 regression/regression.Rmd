@@ -11,7 +11,7 @@ categories:
   - regression
   - transformations
   - insurance
-preview: img\prev_regression.png
+preview: img/prev_regression.png
 date: 2021-10-14
 output:
   distill::distill_article: 
