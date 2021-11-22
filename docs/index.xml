@@ -3,8 +3,8 @@
   <channel>
     <title>More recipes</title>
     <link>https://pat-reen.github.io/More-Modelling-Recipes/</link>
-    <atom:link href="https://pat-reen.github.io/More-Modelling-Recipes/index.xml" rel="self" type="application/rss+xml"/>
-    <description>Exploring simple reproducible modelling and visualisation recipes.
+    <atom:link href="https://pat-reen.github.io/More-Modelling-Recipes/Index.xml" rel="self" type="application/rss+xml"/>
+    <description>Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository.
 </description>
     <generator>Distill</generator>
     <lastBuildDate>Thu, 18 Nov 2021 00:00:00 +0000</lastBuildDate>

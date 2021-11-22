@@ -1,18 +1,18 @@
 # Create site.yml
 
 FileText <- paste0('
-name: "More modelling recipes"
+name: "Modelling and data visualisation recipes"
 title: "More recipes"
-preview: img/logo.png
+image: img/image.png
 description: |
-  Exploring simple reproducible modelling and visualisation recipes.
+  Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository.
 base_url: https://pat-reen.github.io/More-Modelling-Recipes/
 theme: main.css 
 navbar:
   logo: img/logo.png
   search: false
   right:
-    - text: "Home"
+    - icon: fa-home
       href: index.html
     - icon: fab fa-linkedin
       href: https://www.linkedin.com/in/patrick-reen/
@@ -24,6 +24,8 @@ collections:
   posts:
     share: [twitter, linkedin]
     citations: false
+    categories: false
+    categories_metadata: true
 ')
 
 readr::write_lines(FileText, file = "_site.yml")
@@ -71,51 +73,6 @@ d-title{
   }
   .d-title{
   margin-top: 0px;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .distill-site-header a, .distill-site-header .nav-dropdown  {display: none;}
-  .distill-site-header a.nav-toggle {
-    float: right;
-    display: block;
-  }
-  .distill-site-header .title {
-    margin-left: 0;
-  }
-  .distill-site-header .nav-right {
-    margin-right: 0;
-  }
-  .distill-site-header {
-    overflow: hidden;
-  }
-  .nav-right .nav-dropdown-content {
-    margin-left: 0;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .distill-site-header.responsive {position: relative; min-height: 500px; }
-  .distill-site-header.responsive a.nav-toggle {
-    position: absolute;
-    right: 0;
-    top: 0;
-  }
-  .distill-site-header.responsive a,
-  .distill-site-header.responsive .nav-dropdown {
-    display: block;
-    text-align: left;
-  }
-  .distill-site-header.responsive .nav-left,
-  .distill-site-header.responsive .nav-right {
-    width: 100%;
-  }
-  .distill-site-header.responsive .nav-dropdown {float: none;}
-  .distill-site-header.responsive .nav-dropdown-content {position: relative;}
-  .distill-site-header.responsive .nav-dropdown .nav-dropbtn {
-    display: block;
-    width: 100%;
-    text-align: left;
   }
 }
 
