@@ -1,5 +1,5 @@
 ---
-title: "More modelling recipes"
+title: "Modelling and visualisation"
 site: distill::distill_website
 listing: posts
 ---
@@ -9,7 +9,7 @@ library(metathis)
 
 meta() %>%
   meta_general(
-    description =  "Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository."
+    description =  "Exploring a few simple and reproducible modelling and data visualisation recipes."
   ) %>% 
   meta_social(
     title = "More recipes",
