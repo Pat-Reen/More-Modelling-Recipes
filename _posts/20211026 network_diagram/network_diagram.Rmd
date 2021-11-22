@@ -1,8 +1,8 @@
 ---
 title: "Network graphs"
 subtitle: "With Nirvana"
-description: | 
-  This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana.
+description: |
+ This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana.
 author:
   - name: Pat Reen 
     url: https://www.linkedin.com/in/patrick-reen/
@@ -12,6 +12,7 @@ categories:
   - visualisations
 theme: main.css 
 preview: img\prev_network.png
+image: img\prev_network.png
 date: 2021-10-26
 output:
   distill::distill_article: 
