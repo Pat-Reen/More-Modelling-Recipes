@@ -3,9 +3,6 @@
 FileText <- paste0('
 name: "Modelling and data visualisation recipes"
 title: "More recipes"
-image: img/image.png
-description: |
-  Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository.
 base_url: https://pat-reen.github.io/More-Modelling-Recipes/
 theme: main.css 
 navbar:
@@ -67,14 +64,10 @@ d-title{
   --bkgd-color:       #010101;
 }
 
-@media screen and (max-width: 768px) {
-  .distill-site-header .nav-left {
-    margin-left: 0;
+@media print {
+  .distill-site-nav {
+    display: none;
   }
-  .d-title{
-  margin-top: 0px;
-  }
-}
 
 ')
 

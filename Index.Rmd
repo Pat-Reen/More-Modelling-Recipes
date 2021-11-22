@@ -1,8 +1,19 @@
 ---
 title: "More modelling recipes"
-Preview: img\image.png
 site: distill::distill_website
 listing: posts
 ---
 
+```{r, include=FALSE, results='asis'}
+library(metathis)
 
+meta() %>%
+  meta_social(
+    title = "More recipes",
+    description =  "Exploring a few simple and reproducible modelling and data visualisation recipes. Download the code from the github repository.",
+    url = "https://pat-reen.github.io/More-Modelling-Recipes/",
+    image = "img/image.png",
+    og_type = "website",
+    og_author = "Pat Reen",
+  )
+```
