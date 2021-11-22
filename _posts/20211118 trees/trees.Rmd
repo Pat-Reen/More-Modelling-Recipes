@@ -5,7 +5,7 @@ description: |
 author:
   - name: Pat Reen 
     url: https://www.linkedin.com/in/patrick-reen/
-tags:
+categories:
   - decisiontrees
 date: 2021-11-18
 output:

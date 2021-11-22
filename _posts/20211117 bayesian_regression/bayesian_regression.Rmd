@@ -5,7 +5,7 @@ description: |
 author:
   - name: Pat Reen 
     url: https://www.linkedin.com/in/patrick-reen/
-tags:
+categories:
   - bayesian
 date: 2021-11-17
 output:

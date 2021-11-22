@@ -6,7 +6,7 @@ description: |
 author:
   - name: Pat Reen 
     url: https://www.linkedin.com/in/patrick-reen/
-tags:
+categories:
   - dataanalytics
   - regression
   - transformations
