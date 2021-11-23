@@ -52,7 +52,14 @@ FileText <- paste0('
 .distill-site-header a, .distill-site-header .title {
     float: left;
     padding: 45px 10px 10px 10px;
+}
 
+.d-title {
+    position:relative; top:80px
+}
+
+d-article {
+    position:relative; top:80px
 }
 
 @media screen and (min-width: 320px) and (max-width: 1024px){
@@ -60,7 +67,7 @@ FileText <- paste0('
       padding: 0px 0px 0px 0px;
   }
   .distill-site-header .logo img {
-      padding: 0px 0px 0px 0px;
+      display: inline-block;
   }
 }
 
