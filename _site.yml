@@ -7,8 +7,6 @@ navbar:
   logo: img/logo.png
   search: false
   right:
-    - icon: fa-home
-      href: index.html
     - icon: fab fa-linkedin
       href: https://www.linkedin.com/in/patrick-reen/
     - icon: fab fa-github

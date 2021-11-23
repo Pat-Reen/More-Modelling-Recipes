@@ -9,8 +9,6 @@ navbar:
   logo: img/logo.png
   search: false
   right:
-    - icon: fa-home
-      href: index.html
     - icon: fab fa-linkedin
       href: https://www.linkedin.com/in/patrick-reen/
     - icon: fab fa-github
@@ -62,10 +60,11 @@ d-article {
     position:relative; top:80px
 }
 
+d-byline {
+    position:relative; top:80px
+}
+
 @media screen and (min-width: 320px) and (max-width: 1024px){
-  .distill-site-header a, .distill-site-header .title {
-      padding: 0px 0px 0px 0px;
-  }
   .distill-site-header .logo img {
       display: inline-block;
   }

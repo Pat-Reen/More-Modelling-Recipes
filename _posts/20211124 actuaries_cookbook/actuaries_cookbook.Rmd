@@ -1,0 +1,34 @@
+---
+title: "Data transformations"
+subtitle: "With (life) insurance data"
+description: | 
+  I have collaborated with members of the Actuaries Institute of Australia on this 'Actuaries Analytical Cookbook'. It spawned from the idea of sharing recipes to help actuaries and data scientists get started quickly on new projects.
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - statistics
+  - actuarial
+  - insurance
+theme: main.css 
+preview: img/prev_actuaries_cookbook.png
+date: 2021-11-24
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: true
+link-citations: yes
+---
+
+
+# Overview 
+## Background 
+This article considers common data transforms, summary stats, and simple visualisations with (life) insurance data. 
+
+<iframe src="https://actuariesinstitute.github.io/cookbook/docs/index.html" title="Actuaries cookbook" width="100%" height="300"></iframe>
+
+https://actuariesinstitute.github.io/cookbook/docs/index.html
