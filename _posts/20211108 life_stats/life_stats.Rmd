@@ -35,9 +35,9 @@ A radial bar chart is a bar chart plotted in polar co-ordinates rather than a Ca
 
 # The result
 
-A preview of the final visualisation is below, with a link [here](https://public.tableau.com/app/profile/pat5787/viz/AustralianLifeInsuranceReporting/LifeStats).
+A preview of the final visualisation is below (click through to Tableau):
 
-![](img\prev_life.png)
+[![](img\prev_life.png){width=100%}](https://public.tableau.com/app/profile/pat5787/viz/AustralianLifeInsuranceReporting/LifeStats)
 
 # Using r to view industry stats
 As with most data sources, an alternative visualisation tool is r. The below extracts the individual disability income profits and revenue and calculates the margin.
