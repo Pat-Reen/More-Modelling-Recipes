@@ -1908,33 +1908,39 @@ d-appendix {
   --text-size:      20px;
 }
 
-@media screen and (min-width: 1024px){
+.distill-site-header .logo img {
+    float: left;
+    padding: 5px 5px 5px 0px;
+    width: 100px;
+    height: 100px;
+    max-height: 100px;
+}
 
+.distill-site-header a, .distill-site-header .title {
+    float: left;
+    padding: 45px 10px 10px 10px;
+}
+
+.d-title {
+    position:relative; top:80px
+}
+
+d-article {
+    position:relative; top:80px
+}
+
+d-byline {
+    position:relative; top:80px
+}
+
+@media screen and (min-width: 320px) and (max-width: 1024px){
   .distill-site-header .logo img {
-      float: left;
-      padding: 5px 5px 5px 0px;
-      width: 100px;
-      height: 100px;
-      max-height: 100px;
-  }
-  
+      display: inline-block;
   .distill-site-header a, .distill-site-header .title {
-      float: left;
-      padding: 45px 10px 10px 10px;
+    float: left;
+    padding-left: 12px;
+}
   }
-  
-  .d-title {
-      position:relative; top:80px
-  }
-  
-  d-article {
-      position:relative; top:80px
-  }
-  
-  d-byline {
-      position:relative; top:80px
-  }
-
 }
 
 </style>
