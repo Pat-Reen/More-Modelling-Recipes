@@ -14,7 +14,7 @@ categories:
 theme: main.css 
 preview: img/prev_actuaries_cookbook.png
 date: 2021-11-24
-draft: false
+draft: true
 output:
   distill::distill_article: 
     toc: true
