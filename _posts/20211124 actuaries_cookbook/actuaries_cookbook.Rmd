@@ -21,7 +21,6 @@ output:
     toc_float: true
     self_contained: true
     code_folding: true
-link-citations: yes
 ---
 
 I am grateful to the Actuaries Institute of Australia for supporting the launch of an Actuaries Institute Analytical Cookbook. The result of significant collaboration, the cookbook is way more comprehensive than I could have imagined. It covers topics from setting up in R and Python to pricing and experience investigation techniques, (un)supervised learning, natural language processing and more.
