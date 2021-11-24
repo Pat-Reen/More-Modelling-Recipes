@@ -38,6 +38,10 @@ d-byline {
 @media screen and (min-width: 320px) and (max-width: 1024px){
   .distill-site-header .logo img {
       display: inline-block;
+  .distill-site-header a, .distill-site-header .title {
+    float: left;
+    padding-left: 12px;
+}
   }
 }
 
