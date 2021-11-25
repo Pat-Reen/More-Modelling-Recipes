@@ -9,6 +9,8 @@ navbar:
   logo: img/logo.png
   search: false
   right:
+    - icon: fas fa-home
+      href: index.html
     - icon: fab fa-linkedin
       href: https://www.linkedin.com/in/patrick-reen/
     - icon: fab fa-github
@@ -67,10 +69,22 @@ d-byline {
 @media screen and (min-width: 320px) and (max-width: 1024px){
   .distill-site-header .logo img {
       display: inline-block;
+  }
   .distill-site-header a, .distill-site-header .title {
     float: left;
-    padding-left: 12px;
+    text-align: center;
+  }
 }
+
+@media screen and (max-width: 768px){
+  .distill-site-header.responsive {
+      min-height: 100px;
+  }
+  .nav-right a.nav-toggle{
+      padding: 45px
+  }
+  .nav-right a {
+      padding: 10px
   }
 }
 

@@ -1936,10 +1936,22 @@ d-byline {
 @media screen and (min-width: 320px) and (max-width: 1024px){
   .distill-site-header .logo img {
       display: inline-block;
+  }
   .distill-site-header a, .distill-site-header .title {
     float: left;
-    padding-left: 12px;
+    text-align: center;
+  }
 }
+
+@media screen and (max-width: 768px){
+  .distill-site-header.responsive {
+      min-height: 100px;
+  }
+  .nav-right a.nav-toggle{
+      padding: 45px
+  }
+  .nav-right a {
+      padding: 10px
   }
 }
 
@@ -2134,6 +2146,9 @@ d-appendix d-footnote-list a.footnote-backlink {
 <a href="../../index.html" class="title">More recipes</a>
 </div>
 <div class="nav-right">
+<a href="../../index.html">
+<i class="fas fa-home" aria-hidden="true"></i>
+</a>
 <a href="https://www.linkedin.com/in/patrick-reen/">
 <i class="fab fa-linkedin" aria-hidden="true"></i>
 </a>
