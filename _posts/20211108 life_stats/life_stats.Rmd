@@ -26,7 +26,7 @@ output:
 # Background 
 APRA release Australian life industry data on performance quarterly at a product level as well as aggregated results by company. Bi-annually APRA release other statistics on lapse rates, new business rates, decline rates and market share. I have visualised these datasources in Tableau. I have also added an r script which could be used to extract results from the APRA data.
 
-Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisation. Gephi is an open source graphing platform that has a number of algorithms that can automatically spread the points (nodes) of a network and their connecting lines (edges) into set of points that can be combined with other data and visualised in Tableau. You could also create a visual in Gephi, but Tableau has a number of other useful tools.
+Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisation. 
 
 See link above to GitHub repository which has data and tableau workbook for this recipe.
 
@@ -46,7 +46,7 @@ As with most data sources, an alternative visualisation tool is r. The below ext
 # this script reads in the APRA data and produces a few graphs for presentation
 
 packages <- c("tidyverse", "ggplot2", "readxl", "lubridate", "scales", "xtable")
-install.packages(setdiff(packages, rownames(installed.packages())))  
+install.packages(setdiff(packages, rownames(installed.packages())), repos = "http://cran.us.r-project.org")  
 for (package in packages) {
     library(package, character.only = TRUE)
 }

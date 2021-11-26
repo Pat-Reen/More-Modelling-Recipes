@@ -2143,10 +2143,10 @@ d-appendix d-footnote-list a.footnote-backlink {
 <h1>Life industry stats</h1>
 <!--radix_placeholder_categories-->
 <div class="dt-tags">
-  <a href="../../index.html#category:dataanalytics" class="dt-tag">dataanalytics</a>
-  <a href="../../index.html#category:APRA" class="dt-tag">APRA</a>
-  <a href="../../index.html#category:lifeinsurance" class="dt-tag">lifeinsurance</a>
-  <a href="../../index.html#category:visualisations" class="dt-tag">visualisations</a>
+  <a href="../../Index.html#category:dataanalytics" class="dt-tag">dataanalytics</a>
+  <a href="../../Index.html#category:APRA" class="dt-tag">APRA</a>
+  <a href="../../Index.html#category:lifeinsurance" class="dt-tag">lifeinsurance</a>
+  <a href="../../Index.html#category:visualisations" class="dt-tag">visualisations</a>
 </div>
 <!--/radix_placeholder_categories-->
 <p><p>This article sets out a simple recipe for visualising Australian life industry data from APRA using Tableau.</p></p>
@@ -2172,7 +2172,7 @@ d-appendix d-footnote-list a.footnote-backlink {
 </div>
 <h1 id="background">Background</h1>
 <p>APRA release Australian life industry data on performance quarterly at a product level as well as aggregated results by company. Bi-annually APRA release other statistics on lapse rates, new business rates, decline rates and market share. I have visualised these datasources in Tableau. I have also added an r script which could be used to extract results from the APRA data.</p>
-<p>Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisation. Gephi is an open source graphing platform that has a number of algorithms that can automatically spread the points (nodes) of a network and their connecting lines (edges) into set of points that can be combined with other data and visualised in Tableau. You could also create a visual in Gephi, but Tableau has a number of other useful tools.</p>
+<p>Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisation.</p>
 <p>See link above to GitHub repository which has data and tableau workbook for this recipe.</p>
 <h1 id="introducing-radial-bar-charts">Introducing radial bar charts</h1>
 <p>A radial bar chart is a bar chart plotted in polar co-ordinates rather than a Cartesian plane. <a href="https://www.thedataschool.co.uk/jack-parry/create-a-radial-bar-chart-in-tableau">This site</a> sets out a very simple approach, which I have used here.</p>
@@ -2190,7 +2190,7 @@ Show code
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co"># this script reads in the APRA data and produces a few graphs for presentation</span>
 
 <span class="va">packages</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;tidyverse&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;readxl&quot;</span>, <span class="st">&quot;lubridate&quot;</span>, <span class="st">&quot;scales&quot;</span>, <span class="st">&quot;xtable&quot;</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html">setdiff</a></span><span class="op">(</span><span class="va">packages</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/installed.packages.html">installed.packages</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>  
+<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html">setdiff</a></span><span class="op">(</span><span class="va">packages</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/installed.packages.html">installed.packages</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, repos <span class="op">=</span> <span class="st">&quot;http://cran.us.r-project.org&quot;</span><span class="op">)</span>  
 <span class="kw">for</span> <span class="op">(</span><span class="va">package</span> <span class="kw">in</span> <span class="va">packages</span><span class="op">)</span> <span class="op">{</span>
     <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">package</span>, character.only <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
 <span class="op">}</span>
