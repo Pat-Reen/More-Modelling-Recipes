@@ -8,7 +8,7 @@ author:
 categories:
   - decisiontrees
 theme: main.css 
-date: 2021-11-18
+date: 2021-12-09
 draft: true
 output:
   distill::distill_article:
@@ -17,96 +17,48 @@ output:
     self_contained: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+# Overview 
+## Background 
+A decision tree is a flowchart-like structure in which each internal node represents a "test" on an attribute. Depending on the outcome of the test, the tree develops branches leading to a lower level of classification. This process is repeated until all the leaf nodes are reached. 
+
+## Libraries
+A list of packages used in the recipes.
+
+```{r Setup, message=FALSE, warning=FALSE, results='hide'}
+library(rmdformats) # theme for the HTML doc
+library(bookdown)   # bibliography formatting
+library(kableExtra) # formatting tables
+library(scales)     # data formatting  
+library(dplyr)      # tidyverse: data manipulation
+library(tidyr)      # tidyverse: tidy messy data
+library(MASS)       # statistics
+library(corrplot)   # correlation matrix visualisation, optional
+library(ggplot2)    # tidyverse: graphs
+library(ggthemes)   # tidyverse: additional themes for ggplot, optional
+library(pROC)       # visualising ROC curves
+library(caret)      # for Classification And REgression Training
 ```
 
-## Overview 
+# Prepare Data
+Let's use the same dataset as in the "Regression" section.
 
-### Background 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit. Iste quas, esse laudantium quis ipsa consequuntur iure atque! Necessitatibus quam quidem illum, corrupti molestiae, maxime neque, consequuntur quia alias, modi commodi.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cupiditate rem ducimus dolores repellat itaque perferendis corporis ex dicta doloremque optio harum excepturi, ut, praesentium asperiores! Voluptatum amet perspiciatis iusto, fugiat!Lorem ipsum dolor sit amet, consectetur adipisicing elit. Harum, libero quia placeat necessitatibus culpa mollitia, illum, quam sed ratione ad eaque suscipit consectetur itaque quasi aperiam. Quaerat, nihil voluptas tenetur?Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eos unde quam autem fugit, aliquam perspiciatis, accusamus numquam, pariatur impedit excepturi debitis repellendus consectetur laboriosam voluptatem temporibus sunt illo magnam! Voluptates.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ullam repudiandae quidem, fuga eaque, deserunt eius. Aperiam, maxime fuga alias ad vel amet et facere soluta asperiores quasi. A, aperiam, ipsam.
-
-### Introduction
-Lorem ipsum dolor sit amet, consectetur adipisicing elit. Iste quas, esse laudantium quis ipsa consequuntur iure atque! Necessitatibus quam quidem illum, corrupti molestiae, maxime neque, consequuntur quia alias, modi commodi.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cupiditate rem ducimus dolores repellat itaque perferendis corporis ex dicta doloremque optio harum excepturi, ut, praesentium asperiores! Voluptatum amet perspiciatis iusto, fugiat!Lorem ipsum dolor sit amet, consectetur adipisicing elit. Harum, libero quia placeat necessitatibus culpa mollitia, illum, quam sed ratione ad eaque suscipit consectetur itaque quasi aperiam. Quaerat, nihil voluptas tenetur?Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eos unde quam autem fugit, aliquam perspiciatis, accusamus numquam, pariatur impedit excepturi debitis repellendus consectetur laboriosam voluptatem temporibus sunt illo magnam! Voluptates.Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ullam repudiandae quidem, fuga eaque, deserunt eius. Aperiam, maxime fuga alias ad vel amet et facere soluta asperiores quasi. A, aperiam, ipsam.
-
-
-
-```{r Termination Modelling, class.source = 'fold-show'}
-# select all claims
-df_term <- df %>% filter(inc_count_tot >0) 
-
-# add dummy claim duration data. Duration (i.e. in days) is usually considered following an exponential distribution but in our recent study it follows a gamma distribution better. To simplify, here we use exponential distribution CDF to back solve the x. Assume lambda is 1/180 so that the average claim duration is 180 days.
-# simple random is not so reasonable, better to use function with age factored in.
-df_term <- df_term %>% 
-  mutate(term_day = case_when(age <= 45 ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/90)),
-                              age <= 50 ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/180)),
-                                   TRUE ~ ceiling(log(1 - runif(nrow(df_term)))/(-1/360))
-                              ))
-
-plot(df_term$age, df_term$term_day, xlab = "AGE", ylab = "Time to Recover (Days)")
-
-require(rpart)
-require(rpart.plot)
-require(latticeExtra)
-ageGroup_split <- rpart(term_day ~ age,
-                        data = df_term,
-                        control = rpart.control(xval=5, minbucket=4, cp=0.0005))
-
-ageGroup_split$method
-plotcp(ageGroup_split, minline=TRUE)
-rpart.plot(ageGroup_split)
-printcp(ageGroup_split)
-
-# increase cp the learning rate to prune the trees
-ageGroup_pruned <- prune(ageGroup_split, cp=0.005)
-rpart.plot(ageGroup_pruned)
-
-# divide into less groups to keep more obs in each group for distribution fitting
-df_term <- df_term %>% mutate(ageGroup = as.factor(case_when(age < 46 ~ "<= 45",
-                                                             age < 51 ~ "46 - 50",
-                                                                 TRUE ~ ">= 51")))
-
-summary(df_term$ageGroup)
-
-for (age_grp in c("<= 45","46 - 50", ">= 51")) {
-    df_term_loop <- df_term %>% filter(ageGroup == age_grp)
-    hist(df_term_loop$term_day, breaks = 200, prob = T, xlab = "Time to Recover (Days)", ylab = "Probability", 
-         main = paste0("Distribution for age ", age_grp), col = "lightblue", border = "lightblue")
-    
-    # fit gamma distribution
-    Shape <- as.vector(fitdistr(df_term_loop$term_day, "gamma", start=list(shape=1, rate=0.005))$estimate)[1]
-    Rate <- as.vector(fitdistr(df_term_loop$term_day, "gamma", start=list(shape=1, rate=0.005))$estimate)[2]    
-    points(df_term_loop$term_day, dgamma(df_term_loop$term_day, shape = Shape, rate = Rate), col = "tomato")
-    
-    # kernel density estimation
-    # Silverman, B.W. (1986). Density Estimation for Statistics and Data Analysis. London: Chapman & Hall/CRC. p. 45. ISBN 978-0-412-24620-3.
-    h <- 0.9 * min(sqrt(var(df_term_loop$term_day)), IQR(df_term_loop$term_day)/1.34) *length(df_term_loop$term_day)^(-1/5)
-    lines(density(df_term_loop$term_day, bw = h), lwd = 2)
-    
-    legend("topleft", legend = c("Kernel Density", "Gamma distribution"), pch = c(NA,1), lty = c(1,NA),
-           cex = 0.75, inset=c(0.3, 0.1), col = c("black", "tomato"))
-  
-    legend("topright", legend = c(paste0("Actual mean = ", round(mean(y),6)),
-                                   paste0("Kernel mean = ", round(mean(density(df_term_loop$term_day)$y),6)), 
-                                   paste0("Gamma mean = ", round(mean(dgamma(df_term_loop$term_day, 
-                                                                                         shape = Shape, rate = Rate)),6))),
-           cex = 0.75, bty = "n")
-
-    legend("topright", legend = c(paste0("Actual variance = ", round(var(y),10)),
-                                   paste0("Kernel variance = ",round(var(density(df_term_loop$term_day)$y),10)), 
-                                   paste0("Gamma variance = ",round(var(dgamma(df_term_loop$term_day, 
-                                                                                           shape = Shape, rate = Rate)),10))),
-           cex = 0.75, inset=c(0, 0.2), bty = "n")
-  }
-
-
-
+```{r Load data}
+rm(list = ls())
+load(file = "data.RData",)
 ```
 
+Split data into training and testing set
 
-```{r xgboost for incidence prediction}
-library(mlr3)
-library(xgboost)
+```{r Split data, class.source = 'fold-show'}
+# Determine the number of rows for training
+nrow(df)
+# Create a random sample of row IDs
+sample_rows <- sample(nrow(df),0.75*nrow(df))
+# Create the training dataset
+df_train <- df[sample_rows,]
+# Create the test dataset
+df_test <- df[-sample_rows,]
+
 
 samp_cv <- sample(1:nrow(df_test),100000)
 df_cv <- df_test[samp_cv,]
@@ -116,6 +68,92 @@ df_test2 <- df_test[-samp_cv,]
 train_label <- df_train$inc_count_tot
 cv_label <- df_cv$inc_count_tot
 test_label <- df_test2$inc_count_tot
+
+
+```
+
+# Random forest
+## Introduction of random forest
+Random forest is an ensemble learning method that applies bootstrap aggregating, or Bagging, and a random selection of features, to enhance the overall performance by creating a number of trees. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned. Random forest controls over-fitting well.
+
+## Train random forest model
+
+```{r Random Forest for incidence projection}
+
+library(randomForest)
+
+new_train2 <- model.matrix(~ inc_count_tot  
+                      + cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_train)
+
+new_cv2 <- model.matrix(~ inc_count_tot  
+                      + cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_cv)
+
+new_test2 <- model.matrix(~ inc_count_tot  
+                      + cal_year
+                      + policy_year
+                      + sex                           
+                      + smoker
+                      + benefit_period
+                      + waiting_period
+                      + occupation
+                      + age          
+                      + sum_assured             
+                       , data = df_test2)
+
+new_train2 <- as.data.frame(new_train2) %>% rename(., Default = "(Intercept)")
+new_cv2 <- as.data.frame(new_cv2) %>% rename(., Default = "(Intercept)")
+new_test2 <- as.data.frame(new_test2) %>% rename(., Default = "(Intercept)")
+
+rf.fit = randomForest(as.factor(inc_count_tot) ~., data=new_train2, 
+                      ntree=100, 
+                      sampsize=c(500,500),
+                      importance=T)
+
+print(rf.fit)
+
+# the number of variables tried at each split is based on following formula:
+floor(sqrt(ncol(new_train2)-1))
+
+varImpPlot(rf.fit)
+
+rf.predict = predict(rf.fit, new_test2)
+confusionMatrix(as.factor(rf.predict), as.factor(new_test2$inc_count_tot))
+
+rf.predict2 = predict(rf.fit, new_test2, type="prob")
+roc(new_test2$inc_count_tot ~ rf.predict2[,2], plot = TRUE, print.auc = TRUE)
+
+
+
+```
+
+
+# XGBoost
+## Introduction of XGBoost
+XGBoost was developed by Tianqi Chen, and is another well-known ensemble learning algorithm.
+
+## Train XGBoost model
+
+```{r xgboost for incidence prediction}
+library(mlr3)
+library(xgboost)
 
 new_train <- model.matrix(inc_count_tot  ~ 
                         cal_year
@@ -174,103 +212,19 @@ params <- list(booster = "gbtree"
                , scale_pos_weight=n_neg/n_pos)
 
 # xgb training with watchlist to show cross-validation
-xgb1 <- xgb.train(params = params, data = DM_train, nrounds = 10000, watchlist = list(train=DM_train, val=DM_cv)
+xgb1 <- xgb.train(params = params, data = DM_train, nrounds = 100, watchlist = list(train=DM_train, val=DM_cv)
                    ,print_every_n = 10
-                   ,early_stopping_rounds = 100
+                   ,early_stopping_rounds = 50
                    ,maximize = F, eval_metric = "logloss")
 
 summary(xgb1)
 xgb_pred1 <- predict (xgb1, DM_test)
 
-require(caret)
 confusionMatrix(as.factor(as.numeric(xgb_pred1 >0.5)), as.factor(test_label))
 
-require(pROC)
 roc(test_label ~ xgb_pred1, plot = TRUE, print.auc = TRUE)
 
 
-# xgb.cv module automatically divides the data into 'nfold' and performs cross-validation, thus to reduce over-fitting
-xgbcv <- xgb.cv(params = params, data = DM_train
-                 , nrounds = 10000
-                 , nfold = 5
-                 , showsd = T
-                 , stratified = T
-                 , print_every_n = 10
-                 , early_stopping_rounds = 50
-                 , maximize = F, eval_metric = "error")
-
-summary(xgbcv)
-```
-
-Random forest is a ensemble learning method that applies bootstrap aggregating, or Bagging, and a random selection of features, to enhance the overall performance by creating a number of trees. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned. Random forest controls over-fitting well.
-
-
-```{r Random Forest for incidence projection}
-
-library(randomForest)
-
-new_train2 <- model.matrix(~ inc_count_tot  
-                      + cal_year
-                      + policy_year
-                      + sex                           
-                      + smoker
-                      + benefit_period
-                      + waiting_period
-                      + occupation
-                      + age          
-                      + sum_assured             
-                       , data = df_train)
-
-new_cv2 <- model.matrix(~ inc_count_tot  
-                      + cal_year
-                      + policy_year
-                      + sex                           
-                      + smoker
-                      + benefit_period
-                      + waiting_period
-                      + occupation
-                      + age          
-                      + sum_assured             
-                       , data = df_cv)
-
-new_test2 <- model.matrix(~ inc_count_tot  
-                      + cal_year
-                      + policy_year
-                      + sex                           
-                      + smoker
-                      + benefit_period
-                      + waiting_period
-                      + occupation
-                      + age          
-                      + sum_assured             
-                       , data = df_test2)
-
-new_train2 <- as.data.frame(new_train2) %>% rename(., Default = "(Intercept)")
-new_cv2 <- as.data.frame(new_cv2) %>% rename(., Default = "(Intercept)")
-new_test2 <- as.data.frame(new_test2) %>% rename(., Default = "(Intercept)")
-
-rf.fit = randomForest(as.factor(inc_count_tot) ~., data=new_train2, 
-                      ntree=100, 
-                      sampsize=c(500,500),
-                      importance=T)
-
-print(rf.fit)
-# the number of variables tried at each split is based on following formula:
-floor(sqrt(ncol(new_train2)-1))
-
-varImpPlot(rf.fit)
-
-rf.predict = predict(rf.fit, new_test2)
-confusionMatrix(as.factor(rf.predict), as.factor(new_test2$inc_count_tot))
-
-rf.predict2 = predict(rf.fit, new_test2, type="prob")
-roc(new_test2$inc_count_tot ~ rf.predict2[,2], plot = TRUE, print.auc = TRUE)
-
-
 
 ```
-
-
-
-
 
