@@ -303,7 +303,7 @@ Cons:
 * SVM and neural network may perform better than GBDT on sparse data.
 * Training takes longer as trees are inter-dependent.
 
-## Compared to random forest
+## GBDT vs Random Forest
 Similarity:
 
 * Both contains multiple trees, and all trees are involved in determining final result.
@@ -332,7 +332,7 @@ While machine learning algorithms have support for tuning and can work with exte
 
 * Naive GBDT uses all data points in every iteration. XGBoost randomly samples the data to prevent over-fitting.
 
-* XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). XGBoost treats missing values as a sparse matrix. When splitting, the missing value is calculated in both the left and right tree, and will be assigned to whichever side gives better loss reduction (clever isn't it). This assumes that the training data and predicting data have same distribution.
+* XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). The strategy in XGBoost is to put all samples where the value of the split feature is unknown in one of the two children (left or right sub-tree), whichever side gives optimised training loss. Clever isn't it? This assumes that the training data and predicting data have same distribution.
 
 ## Train XGBoost model
 

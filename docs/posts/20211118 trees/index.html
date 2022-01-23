@@ -2193,7 +2193,7 @@ d-appendix d-footnote-list a.footnote-backlink {
 <ul>
 <li><a href="#a-gentle-touch-on-gbdt">A gentle touch on GBDT</a></li>
 <li><a href="#pros-and-cons-of-gbdt">Pros and cons of GBDT</a></li>
-<li><a href="#compared-to-random-forest">Compared to random forest</a></li>
+<li><a href="#gbdt-vs-random-forest">GBDT vs Random Forest</a></li>
 <li><a href="#introduction-of-xgboost">Introduction of XGBoost</a></li>
 <li><a href="#xgboost-vs-gbdt">XGBoost vs GBDT</a></li>
 <li><a href="#train-xgboost-model">Train XGBoost model</a></li>
@@ -2527,7 +2527,7 @@ Area under the curve: 0.6683</code></pre>
 <li>SVM and neural network may perform better than GBDT on sparse data.</li>
 <li>Training takes longer as trees are inter-dependent.</li>
 </ul>
-<h2 id="compared-to-random-forest">Compared to random forest</h2>
+<h2 id="gbdt-vs-random-forest">GBDT vs Random Forest</h2>
 <p>Similarity:</p>
 <ul>
 <li>Both contains multiple trees, and all trees are involved in determining final result.</li>
@@ -2550,7 +2550,7 @@ Area under the curve: 0.6683</code></pre>
 <li><p>GBDT only uses the first order derivative of the loss function, while XGBoost uses both the first and second order derivatives (by Taylor series). Second order derivative allows gradient to descend faster in the right direction.</p></li>
 <li><p>GBDT uses tree base learner, while XGBoost also supports other types such as linear learner. Though in most cases, we may not use linear learner as a base learner, because adding multiple linear models together still yields a linear model.</p></li>
 <li><p>Naive GBDT uses all data points in every iteration. XGBoost randomly samples the data to prevent over-fitting.</p></li>
-<li><p>XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). XGBoost treats missing values as a sparse matrix. When splitting, the missing value is calculated in both the left and right tree, and will be assigned to whichever side gives better loss reduction (clever isn’t it). This assumes that the training data and predicting data have same distribution.</p></li>
+<li><p>XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). The strategy in XGBoost is to put all samples where the value of the split feature is unknown in one of the two children (left or right sub-tree), whichever side gives optimised training loss. Clever isn’t it? This assumes that the training data and predicting data have same distribution.</p></li>
 </ul>
 <h2 id="train-xgboost-model">Train XGBoost model</h2>
 <div class="layout-chunk" data-layout="l-body">
@@ -2618,14 +2618,14 @@ Area under the curve: 0.6683</code></pre>
                    ,maximize <span class="op">=</span> <span class="cn">F</span>, eval_metric <span class="op">=</span> <span class="st">&quot;logloss&quot;</span><span class="op">)</span>
 </code></pre>
 </div>
-<pre><code>[1] train-logloss:0.680504  val-logloss:0.680441 
+<pre><code>[1] train-logloss:0.680504  val-logloss:0.680442 
 Multiple eval metrics are present. Will use val_logloss for early stopping.
 Will train until val_logloss hasn&#39;t improved in 50 rounds.
 
 [11]    train-logloss:0.626841  val-logloss:0.627098 
 [21]    train-logloss:0.608407  val-logloss:0.609164 
 [31]    train-logloss:0.596259  val-logloss:0.597345 
-[41]    train-logloss:0.585437  val-logloss:0.586822 
+[41]    train-logloss:0.585438  val-logloss:0.586822 
 [51]    train-logloss:0.577686  val-logloss:0.579186 
 [61]    train-logloss:0.571024  val-logloss:0.572678 
 [71]    train-logloss:0.565648  val-logloss:0.567431 
