@@ -142,10 +142,10 @@ Unlike classification tree, we cannot calculate the Gini impurity or entropy sin
 
 ### Mean square error (MSE)
 Mean square error is defined as
-$$ MSE = \frac{1}{n} \sum_{i=1}^n (Y_i - \hat{Y}_i)^2 $$
-where $Y_i$ is the actual value and $\hat{Y}_i$ is the predicted value. This is the same approach used in linear regression, which aims to minimise the difference between the actual and predicted values.
+$$ MSE = \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2 $$
+where $y_i$ is the actual value and $\hat{y}_i$ is the predicted value. This is the same approach used in linear regression, which aims to minimise the difference between the actual and predicted values.
 
-Note that regression tree uses piecewise linear functions, which fits a linear function to a certain interval. if we keep dividing the dataset, the tree is able to approach any kind of non-linear trends asymptotically. This is more flexible than simple linear regression.
+Note that regression tree uses piecewise linear functions, which fits a linear function to a certain interval. if we keep dividing the dataset, the tree is able to depict any kind of non-linear trends asymptotically. This is more flexible than simple linear regression.
 
 ## Regression tree example
 Let's create a scenario where termination of claims is driven by age of the claimant. Decision tree will be used to split the dataset based on age and see if result is in line with our expectation.
@@ -191,13 +191,21 @@ The pruned tree splits the dataset into 3 subgroups which are exactly same as wh
 
 # Random forest
 ## Introduction of random forest
-Random forest is an ensemble learning method that applies bootstrap aggregating, or Bagging, and a random selection of features, to enhance the overall performance by creating a number of trees. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned. Random forest controls over-fitting well.
+Random forest is an ensemble learning method that applies bootstrap aggregating, or Bagging, and a random selection of features, to enhance the overall performance by creating a number of trees. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned.
+
+Bootstrap is a sampling technique. Sampling is to randomly pick data points from a known sample as such to form a new sample, either with or without replacement. Random forest uses sampling with replacement, which is to choose from a set (or original data) of size $n$, to form a new set (or sample) of size $n$.
+
+By using replacement, each data point has a chance of $\frac{1}{n}$ to be selected, and after $n$ selections, the probability that a data point is not selected, is $(1 - \frac{1}{n})^n$. When $n \to \infty$, this converges to $\frac{1}{e} \approx 0.368$. This means around 36.8% data will not be selected into the new sample, which are called "Out of Bag" (OOB) data.
+
+The earlier random decision forests by Tin Kam Ho used the “random subspace method”, where each tree got a random subset of features. However, a few years later, Leo Breiman described the procedure of selecting different subsets of features for each node (while a tree was given the full set of features). Leo Breiman’s formulation has become the “trademark” random forest algorithm that we typically refer to these days when we speak of “random forest”. 
+
+With the randomness in sampling of data points and features, random forest can control over-fitting well. Meanwhile, as random forest uses multiple decision trees, it also helps reduce the variance. If we treat each tree as a $iid$ random variable $X_i$ with variance $\sigma^2$, variance of their mean is
+$$ Var(\frac{1}{n} \sum X_i) = \frac{\sigma^2}{n}$$
+where $n$ denotes the number of trees.
 
 ## Train random forest model
 
 ```{r Random Forest for incidence projection}
-
-
 
 new_train2 <- model.matrix(~ inc_count_tot  
                       + cal_year
@@ -245,11 +253,13 @@ rf.fit = randomForest(as.factor(inc_count_tot) ~., data=new_train2,
                       importance=T)
 
 print(rf.fit)
+```
 
-# the number of variables tried at each split is based on following formula:
-floor(sqrt(ncol(new_train2)-1))
-
+```{r variable importance fig, fig.width=10, fig.height=6.5}
 varImpPlot(rf.fit)
+```
+
+```{r Random Forest for incidence projection cont.}
 
 rf.predict = predict(rf.fit, new_test2)
 confusionMatrix(as.factor(rf.predict), as.factor(new_test2$inc_count_tot))
@@ -263,8 +273,66 @@ roc(new_test2$inc_count_tot ~ rf.predict2[,2], plot = TRUE, print.auc = TRUE)
 
 
 # XGBoost
+## A gentle touch on GBDT
+Before talking about XGBoost, let's take a look at gradient boosting decision trees (GBDT). Unlike Bagging technique used by random forest, Boosting sums up all the trees instead of taking majority vote. All the trees (or weak learners) are dependent. At every training iteration, the mis-classified samples at the previous training step will be assigned higher weight. The predicted outcome is the weighted sum of all the learners.
+
+As an example, to predict the age of a person (say actual value is 40):
+* the GBDT model trains the first weak learner (or tree) to make a prediction of 30. Apparently the variance of this prediction against actual value is 10. 
+* Then in the next tree, it makes another prediction of age 6 (out of 10), which reduces the variance to 4. 
+* Then in the third tree, the predicted age is 3 (out of 4), with variance down to 1. 
+* The last tree predicts the age of 1 (out of 1). 
+* Finally, if we add up all the 4 trees, we will end up having a predicted value of age 40.
+
+![Golf in boosting](golf-gbdt.png)
+
+Just like playing golf, GBDT model tries to explain the residual of the previous fitting. Actually, the algorithm uses negative gradient to approximate the residual. For each sample point, the loss function is in the form of
+$$ l(y_i, \hat{y}_i) = \frac{1}{2}(y_i - \hat{y}_i)^2$$
+Note that this is just same as mean square error, the $\frac{1}{2}$ at the front is just to offset the coefficient 2 that will emerge when calculating derivative, without changing the overall trend. Thus, the negative gradient is
+$$ -\frac{\partial l}{\partial \hat{y}_i} = (y_i - \hat{y}_i)$$
+which is exactly the variance between the actual and predicted value.
+
+## Pros and cons of GBDT
+Pros:
+
+* Fast predicting process, allowing multi-thread computation.
+* Works well on dense data.
+* Good interpretability and Robustness, can automatically find higher order relationships between the features.
+
+Cons:
+
+* SVM and neural network may perform better than GBDT on sparse data.
+* Training takes longer as trees are inter-dependent.
+
+## Compared to random forest
+Similarity:
+
+* Both contains multiple trees, and all trees are involved in determining final result.
+* Both can handle classification or regression problems.
+
+Difference:
+
+* Trees in random forest can be derived in parallel, however for GBDT they need to come one after another.
+* Random forest uses majority vote, while GBDT takes weighted sum of all trees.
+* Random forest is not sensitive to outliers, but GBDT is.
+* Random forest reduces the model variance, and GBDT reduces the model bias.
+
 ## Introduction of XGBoost
-XGBoost was developed by Tianqi Chen, and is another well-known ensemble learning algorithm.
+XGBoost stands for eXtreme Gradient Boosting and is developed on the framework of gradient boosting by Tianqi Chen et. al. It inherits the nature of GBDT model and has made several enhancements to be more powerful and efficient.
+
+One of the main features about XGBoost is that it has been able to build tree components in parallel. Like naive GBDT, It generates trees sequentially. However within a single tree, the child nodes are mutually independent. Thus each of these child nodes can be allocated to one core (or thread), to compute further split from the child node.
+
+While machine learning algorithms have support for tuning and can work with external programs, XGBoost has built-in parameters for regularisation and cross-validation to make sure both bias and variance is kept at a minimal.
+
+## XGBoost vs GBDT
+* XGBoost uses L2 norm which controls over-fitting and allows model to converge faster than L1 norm. For more information about regularisation, this article is a good reading https://www.kaggle.com/residentmario/l1-norms-versus-l2-norms
+
+* GBDT only uses the first order derivative of the loss function, while XGBoost uses both the first and second order derivatives (by Taylor series). Second order derivative allows gradient to descend faster in the right direction.
+
+* GBDT uses tree base learner, while XGBoost also supports other types such as linear learner. Though in most cases, we may not use linear learner as a base learner, because adding multiple linear models together still yields a linear model.
+
+* Naive GBDT uses all data points in every iteration. XGBoost randomly samples the data to prevent over-fitting.
+
+* XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). XGBoost treats missing values as a sparse matrix. When splitting, the missing value is calculated in both the left and right tree, and will be assigned to whichever side gives better loss reduction (clever isn't it). This assumes that the training data and predicting data have same distribution.
 
 ## Train XGBoost model
 
