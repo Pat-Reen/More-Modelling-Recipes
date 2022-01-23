@@ -1,0 +1,32 @@
+---
+title: "Actuaries Institute Cookbook"
+subtitle: "Analytical Cookbook with R and Python"
+description: | 
+  I have collaborated with members of the Actuaries Institute of Australia on this 'Actuaries Analytical Cookbook'. It spawned from the idea of sharing recipes to help actuaries and data scientists get started quickly on new projects.
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - statistics
+  - actuarial
+  - insurance
+theme: main.css 
+preview: img/prev_actuaries_cookbook.png
+date: 2021-11-30
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: true
+---
+
+I am grateful to the Actuaries Institute of Australia for supporting the launch of an Actuaries Institute Analytical Cookbook. The result of significant collaboration, the cookbook is way more comprehensive than I could have imagined. It covers topics from setting up in R and Python to pricing and experience investigation techniques, (un)supervised learning, natural language processing and more.
+
+For more, click on the preview below:
+
+[![](img/actuaries_cookbook_page.png){width=100%}](https://actuariesinstitute.github.io/cookbook/docs/index.html)
+
+

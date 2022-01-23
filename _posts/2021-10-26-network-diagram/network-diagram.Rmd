@@ -1,0 +1,91 @@
+---
+title: "Network graphs"
+subtitle: "With Nirvana"
+description: |
+ This article sets out a simple recipe for visualising a network using Tableau and Gephi. The example used is the network of bands and band members interconnected with Nirvana.
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - network
+  - visualisations
+theme: main.css 
+preview: img/prev_network.png
+date: 2021-10-26
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: true
+---
+
+# Background 
+Tableau is great at visualising points on a map or plane but doesn't have a neat way of automatically plotting points based upon their relationships to one another. In plotting a network, you want to space the points based upon how many other points are connected to it - so, for example, one parent point with many children should have the children clustered around it ideally. More generally, points should diverge into clusters based upon the closeness of the relationships. 
+
+Examples of uses are plotting social networks or interconnected tools/ spreadsheets.
+
+Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisation. Gephi is an open source graphing platform that has a number of algorithms that can automatically spread the points (nodes) of a network and their connecting lines (edges) into set of points that can be combined with other data and visualised in Tableau. You could also create a visual in Gephi, but Tableau has a number of other useful tools.
+
+The inspiration for this approach to network charts came from [this example](https://thedatasurfers.com/2019/08/27/how-to-use-gephi-to-create-network-visualizations-for-tableau/).
+
+See link above to GitHub repository which has data and tableau workbook for this recipe.
+
+# The result
+
+A preview of the final visualisation is below (click through to Tableau):
+
+[![](img/prev_network.png){width=100%}](https://public.tableau.com/app/profile/pat5787/viz/Nirvana_16351886101480/Nirvana?publish=yes)
+
+# What is a network chart?
+A visual representation of a network. It comprises nodes (points in the graph) and edges (lines joining the points).
+
+# Structuring data for Gephi
+Gephi needs two tables: (1) a table of nodes (here individual band members) and (2) a table of edges i.e. a definition of how those nodes relate to each other.
+
+Our data looks like the below - a record for each band member for a given iteration of the band. Each record has an ID and each record has a parent (the other point we would like that record to connect to). This data table fully defines the data as well as each row's relationship with the other rows.
+
+![](img\Data.png) 
+
+From this data we create two additional tables. The "nodes" table contains each row's ID and its Node (the same value as the ID):
+
+![](img\Data_nodes.png){width=40%}
+
+The "edges" table contains each row's ID its parent or Target ID:
+
+![](img\Data_edges.png){width=40%}
+
+This is all that Gephi needs (note: Gephi needs the tables as values). 
+
+## Plotting network points in Gephi
+Install and open Gephi (see "inspiration" link above for troubleshooting tips on installation). The Gephi start page looks like:
+
+![](img\Gephi_StartPage.png) 
+
+You'll want to open a file, loading the nodes (as a "nodes table") first:
+
+![](img\Gephi_ImportNodes.png) 
+Load the data into a new workspace as a "Directed" graph type.
+
+![](img\Gephi_ImportNodes2.png)
+
+Load the edges data into the same workspace as an "Edges" table.
+
+![](img\Gephi_ImportEdges.png) 
+
+You should get something that looks like this in the "Overview" page:
+
+![](img\Gephi_Raw.png){width=60%}
+
+Then, the magic of Gephi - the "layout" options will space out the points and edges considering the relationships you have specified. There are various layouts that suit different data and they can be tailored e.g. to space points further from each other or space dependent on the number of related points etc. In the end you might get something that looks like this:
+
+![](img\Gephi_Layout.png){width=80%}
+
+# Exporting data
+You can then export the data. It is exported as a ".gexf" which can be opened in excel as a ".XML" file. Extract the X and Y points and join to your data - and there you have it - network points for Tableau.
+
+The rest follows simply in the Tableau workbook provided in the GitHub page.
+
+
