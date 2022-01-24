@@ -1,14 +1,17 @@
 ---
 title: "Decision trees"
 description: | 
-  Decision tree applications.
+  A brief into to decision tree classification techniques with a few simple worked examples using (life) insurance data on disability income.
 author:
   - name: Charlie Jiang 
     url: https://www.linkedin.com/in/charlie-jiang/
 categories:
   - decisiontrees
+  - statistics
+  - dataanalytics
 theme: main.css 
-date: 2021-12-09
+preview: img/prev_trees.png
+date: 2022-02-01
 draft: false
 output:
   distill::distill_article:
@@ -23,11 +26,11 @@ A decision tree is a flowchart-like structure which models the decisions and the
 
 In a decision tree, each internal node is split by a single feature. The tree then develops branches leading to lower level of subgroups that increases the homogeneity of the elements within that group. The split on a feature is not influenced by other features. Such division process is repeated until all leaf nodes are reached. The paths from root to leaf represent classification rules.
 
-![Evolution of Tree-based Algorithms](tree_based_algorithms.jpeg)
+![Evolution of Tree-based Algorithms](img/tree_based_algorithms.jpeg)
 
 
 ## Libraries
-A list of packages used in the recipes.
+A list of packages used in the recipes below.
 
 ```{r Setup, message=FALSE, warning=FALSE, results='hide'}
 library(rmdformats)     # theme for the HTML doc
@@ -47,14 +50,14 @@ library(xgboost)        # XGBoost algorithm
 ```
 
 # Prepare Data
-Let's use the same dataset as in the "Regression" section.
+Let's use the same dataset as in the "Regression" article. That data looked at disability income insurance experience.
 
 ```{r Load data}
 rm(list = ls())
 load(file = "data.RData",)
 ```
 
-Split data into training and testing set
+Split data into training and testing sets:
 
 ```{r Split data, class.source = 'fold-show'}
 # Determine the number of rows for training
@@ -75,17 +78,15 @@ df_test2 <- df_test[-samp_cv,]
 train_label <- df_train$inc_count_tot
 cv_label <- df_cv$inc_count_tot
 test_label <- df_test2$inc_count_tot
-
-
 ```
 
 # Decision tree
-## Introduction of decision tree
-Decision tree uses a technique called "divide-and-conquer", which is to divide the dataset into partitions with similar values for the outcome of interest. To divide-and-conquer, the algorithm looks for an initial split that creates the two most homogeneous groups, and repeat this process till all the leaf nodes are reached.
+## Introduction to decision trees
+Decision trees uses a technique called "divide-and-conquer", which divides the dataset into partitions with similar values for the outcome of interest. To divide-and-conquer, the algorithm looks for an initial split that creates the two most homogeneous groups, and repeat this process till all the leaf nodes are reached.
 
-Leaf nodes represent the final outcome of all the determination, which are the lowest levels of a decision tree. It tells the classes (or types) of the output variable in classification problems, or its predicted values in regression problems.
+Leaf nodes represent the final outcome of all the determinations, which are the lowest levels of decision trees. It describes the classes (or types) of the output variable in classification problems, or its predicted values in regression problems.
 
-The next question is, how does the algorithm decide where to split the dataset? For example, if one of the factors is "age", how does the model know to split it at age 30, 40, or 50, in order to achieve the best "two most homogeneous" groups? For classification trees, the common solutions are Gini impurity and Entropy.
+An obvious question is how does the algorithm decide where to split the dataset? For example, if one of the factors is "age", how does the model know to split it at age 30, 40, or 50, in order to achieve the best "two most homogeneous" groups? For classification trees, the common solutions are Gini impurity and Entropy.
 
 ### Gini impurity
 Gini impurity is a common approach to calculate the goodness of split in a numeric way, which helps decide where to split the dataset.
@@ -96,7 +97,7 @@ Gini impurity is denoted as
 $$G(x) = \sum_{i=1}^n P(x_i)(1 - P(x_i)) = 1 - \sum^n_{i=1} P(x_i)^2$$
 where $p_k$ is the probability of a correct classification within the subgroup. 
 
-![Gini Impurity calculation](gini_impurity.png)
+![Gini Impurity calculation](img/gini_impurity.png)
 
 In the example of whether having chest pain in relation to heart disease, the Gini impurity can be calculated as follows:
 
@@ -188,7 +189,6 @@ rpart.plot(ageGroup_pruned)
 
 The pruned tree splits the dataset into 3 subgroups which are exactly same as what has been defined in the data prep.
 
-
 # Random forest
 ## Introduction of random forest
 Random forest is an ensemble learning method that applies bootstrap aggregating, or Bagging, and a random selection of features, to enhance the overall performance by creating a number of trees. For classification tasks, the output of the random forest is the class selected by most trees. For regression tasks, the mean or average prediction of the individual trees is returned.
@@ -255,9 +255,13 @@ rf.fit = randomForest(as.factor(inc_count_tot) ~., data=new_train2,
 print(rf.fit)
 ```
 
+Plotting variable importance:
+
 ```{r variable importance fig, fig.width=10, fig.height=6.5}
 varImpPlot(rf.fit)
 ```
+
+Confusion matrix and ROC:
 
 ```{r Random Forest for incidence projection cont.}
 
@@ -267,13 +271,10 @@ confusionMatrix(as.factor(rf.predict), as.factor(new_test2$inc_count_tot))
 rf.predict2 = predict(rf.fit, new_test2, type="prob")
 roc(new_test2$inc_count_tot ~ rf.predict2[,2], plot = TRUE, print.auc = TRUE)
 
-
-
 ```
 
-
 # XGBoost
-## A gentle touch on GBDT
+## A gentle intro to gradient boosting
 Before talking about XGBoost, let's take a look at gradient boosting decision trees (GBDT). Unlike Bagging technique used by random forest, Boosting sums up all the trees instead of taking majority vote. All the trees (or weak learners) are dependent. At every training iteration, the mis-classified samples at the previous training step will be assigned higher weight. The predicted outcome is the weighted sum of all the learners.
 
 As an example, to predict the age of a person (say actual value is 40):
@@ -283,7 +284,7 @@ As an example, to predict the age of a person (say actual value is 40):
 * The last tree predicts the age of 1 (out of 1). 
 * Finally, if we add up all the 4 trees, we will end up having a predicted value of age 40.
 
-![Golf in boosting](golf-gbdt.png)
+![Golf in boosting](img/golf-gbdt.png)
 
 Just like playing golf, GBDT model tries to explain the residual of the previous fitting. Actually, the algorithm uses negative gradient to approximate the residual. For each sample point, the loss function is in the form of
 $$ l(y_i, \hat{y}_i) = \frac{1}{2}(y_i - \hat{y}_i)^2$$
@@ -409,8 +410,6 @@ xgb_pred1 <- predict (xgb1, DM_test)
 confusionMatrix(as.factor(as.numeric(xgb_pred1 >0.5)), as.factor(test_label))
 
 roc(test_label ~ xgb_pred1, plot = TRUE, print.auc = TRUE)
-
-
 
 ```
 

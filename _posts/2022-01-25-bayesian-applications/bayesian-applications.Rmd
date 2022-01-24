@@ -28,7 +28,6 @@ link-citations: yes
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-
 # Background
 
 Bayesian statistics reflects uncertainty about model parameters by assuming some prior probability distribution for those parameters. That prior uncertainty is adjusted for observed data to produce a posterior distribution.
@@ -730,7 +729,11 @@ Further considerations: extracting the mean of the parameter projections, we cou
 
 That is to say, the model makes some assumptions about lags in symptoms and in reporting (assuming some distribution for those delays) in order to estimate the true underlying number of infections (backwards). Using that backcast it projects out how those infections might be reported over time. The model also estimates the effective reproduction number in order to predict future infections.
 
-Covid case and test data sourced from the department of [NSW Website](https://data.nsw.gov.au/) on 17/01/2022. Cases:
+Covid case and test data sourced from the department of [NSW Website](https://data.nsw.gov.au/) on 17/01/2022. 
+
+We should be careful in placing too heavy a reliance on any models of incidence which are based upon case data (particularly where case rates are expected to be under reported or where testing is incomplete). The example is purely illustrative and does not attempt to correct for gaps in the data.
+
+Case data:
 
 ```{r Case data}
 df_cases <- read.csv(file = 'confirmed_cases_table1_location.csv') 
@@ -805,7 +808,7 @@ theme_pander() + scale_color_gdocs()
 
 ```
 
-There are some pragmatic methods for adjusting the case numbers for [increasing test positivity rates](http://freerangestats.info/blog/2020/05/09/covid-population-incidence). For our purposes we will focus the model on case data before 23 December 2021 in order to exclude the period where the test data became less reliable/ complete.
+There are some pragmatic methods for adjusting the case numbers for [increasing test positivity rates](http://freerangestats.info/blog/2020/05/09/covid-population-incidence). For our purposes we will focus the model on case data before 23 December 2021 in order to exclude the period where the test data became less reliable/ complete, noting that underlying data completeness issues are likely present.
 
 ```{r Epinow2 - inputs, eval=FALSE}
 
