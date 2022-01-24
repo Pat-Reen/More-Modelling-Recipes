@@ -26,7 +26,7 @@ A decision tree is a flowchart-like structure which models the decisions and the
 
 In a decision tree, each internal node is split by a single feature. The tree then develops branches leading to lower level of subgroups that increases the homogeneity of the elements within that group. The split on a feature is not influenced by other features. Such division process is repeated until all leaf nodes are reached. The paths from root to leaf represent classification rules.
 
-![Evolution of Tree-based Algorithms](img/tree_based_algorithms.jpeg)
+![Evolution of Tree-based Algorithms (source: https://www.kaggle.com/prashant111/xgboost-k-fold-cv-feature-importance)](img/tree_based_algorithms.jpeg)
 
 
 ## Libraries
@@ -195,7 +195,7 @@ Random forest is an ensemble learning method that applies bootstrap aggregating,
 
 Bootstrap is a sampling technique. Sampling is to randomly pick data points from a known sample as such to form a new sample, either with or without replacement. Random forest uses sampling with replacement, which is to choose from a set (or original data) of size $n$, to form a new set (or sample) of size $n$.
 
-By using replacement, each data point has a chance of $\frac{1}{n}$ to be selected, and after $n$ selections, the probability that a data point is not selected, is $(1 - \frac{1}{n})^n$. When $n \to \infty$, this converges to $\frac{1}{e} \approx 0.368$. This means around 36.8% data will not be selected into the new sample, which are called "Out of Bag" (OOB) data.
+With replacement, each data point has a chance of $\frac{1}{n}$ to be selected, and after $n$ selections, the probability that a data point is not selected, is $(1 - \frac{1}{n})^n$. When $n \to \infty$, this converges to $\frac{1}{e} \approx 0.368$. This means around 36.8% data will not be selected into the new sample, which are called "Out of Bag" (OOB) data.
 
 The earlier random decision forests by Tin Kam Ho used the “random subspace method”, where each tree got a random subset of features. However, a few years later, Leo Breiman described the procedure of selecting different subsets of features for each node (while a tree was given the full set of features). Leo Breiman’s formulation has become the “trademark” random forest algorithm that we typically refer to these days when we speak of “random forest”. 
 
@@ -284,7 +284,7 @@ As an example, to predict the age of a person (say actual value is 40):
 * The last tree predicts the age of 1 (out of 1). 
 * Finally, if we add up all the 4 trees, we will end up having a predicted value of age 40.
 
-![Golf in boosting](img/golf-gbdt.png)
+![Intuition behind gradient boosting (source: https://explained.ai/gradient-boosting/index.html)](img/golf-gbdt.png)
 
 Just like playing golf, GBDT model tries to explain the residual of the previous fitting. Actually, the algorithm uses negative gradient to approximate the residual. For each sample point, the loss function is in the form of
 $$ l(y_i, \hat{y}_i) = \frac{1}{2}(y_i - \hat{y}_i)^2$$
@@ -382,7 +382,9 @@ DM_train <- xgb.DMatrix(data = new_train, label = train_label)
 DM_cv <- xgb.DMatrix(data = new_cv, label = cv_label)
 DM_test <- xgb.DMatrix(data = new_test, label = test_label)
 
-# default hyper-parameters. Given the dataset is very imbalanced, we use 'scale_pos_weight' to re-balance it which is the number of negative observations (i.e. "0") over the number of positive observations (i.e. "1").
+# Given the dataset is highly imbalanced, we use 'scale_pos_weight' 
+# to re-balance it which is the number of negative observations (i.e. "0") 
+# over the number of positive observations (i.e. "1").
 n_pos <- df_train %>% filter(inc_count_tot==1) %>% nrow(.)
 n_neg <- df_train %>% filter(inc_count_tot==0) %>% nrow(.)
 
