@@ -1,7 +1,15 @@
 ---
 title: "Modelling and visualisation"
 site: distill::distill_website
-listing: posts
+listing: 
+  posts:
+    - 2022-02-01-trees
+    - 2022-01-25-bayesian-applications
+    - 2021-11-30-actuaries-cookbook
+    - 2021-11-08-life-stats
+    - 2021-10-26-network-diagram
+    - 2021-10-14-regression 
+    - 2021-10-10-data-transformations
 ---
 
 ```{r, include=FALSE, results='asis'}

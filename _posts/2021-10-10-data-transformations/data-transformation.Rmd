@@ -1,0 +1,649 @@
+---
+title: "Data transformations"
+subtitle: "With (life) insurance data"
+description: | 
+  This article sets out a few practical recipes for data transformations with (life) insurance data. 
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - statistics
+  - transformations
+  - insurance
+theme: main.css 
+preview: img/prev_data_transform.png
+date: 2021-10-10
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: true
+bibliography: references.bib 
+link-citations: yes
+---
+
+
+# Overview 
+## Background 
+This article considers common data transforms, summary stats, and simple visualisations with (life) insurance data. 
+
+See link above to GitHub repository which has the detailed code.
+
+## Libraries
+A list of packages used in the recipes.
+
+```{r Setup, message=FALSE, warning=FALSE, results='hide'}
+library(rmdformats) # theme for the HTML doc
+library(bookdown)   # bibliography formatting
+library(kableExtra) # formatting tables
+library(scales)     # data formatting  
+library(dplyr)      # tidyverse: data manipulation
+library(tidyr)      # tidyverse: tidy messy data
+library(corrplot)   # correlation matrix visualisation, optional
+library(ggplot2)    # tidyverse: graphs
+library(pdp)        # tidyverse: arranging plots
+library(GGally)     # tidyverse: extension of ggplot2
+library(ggthemes)   # tidyverse: additional themes for ggplot, optional
+library(plotly)     # graphs, including 3D 
+library(caret)      # sampling techniques
+library(broom)      # tidyverse: visualising statistical objects
+library(pROC)       # visualising ROC curves
+library(lmtest)     # tests for regression models
+
+# packages below have some interaction with earlier packages, not always needed
+library(arm)        # binned residual plot
+library(msme)       # statistical tests, pearson dispersion
+library(MASS)       # statistics
+
+```
+
+```{r Setup - remove object if exists, warning = FALSE, echo=FALSE, results = FALSE, message=FALSE, include=FALSE}
+ifrm <- function(x, env = globalenv()) 
+{
+  if(exists(x, envir = env)) 
+  {
+    rm(list = x, envir = env)
+  }
+}
+```
+
+## Further reading
+A few books and articles of interest:
+
+* [Generalised Linear Models for Insurance Data](https://www.cambridge.org/au/academic/subjects/statistics-probability/statistics-econometrics-finance-and-insurance/generalized-linear-models-insurance-data?format=HB&isbn=9780521879149) is a great book introducing GLMs in the context of insurance, considering problems specific to insurance data.
+* [Tidyverse documentation](https://www.tidyverse.org/) full set of documentation for Tidyverse packages (packages for data science) e.g. dplyr for data manipulation; tidyr for tidying up messy data; ggplot for visualisation.
+
+# Data Simulation 
+This section sets out a method for generating dummy data. The simulated data is intended to reflect typical data used in an analysis of disability income incidence experience and is used throughout this analysis. Replace this data with your actual data.
+
+More detail on the techniques used can be found in the section on data manipulation.
+
+## Simulating policies
+We start by simulating a mix of 200k policies over 3 years. Some simplifying assumptions e.g. nil lapse/ new bus (no allowance for part years of exposure), no indexation. Mix of business assumptions for benefit period, waiting period and occupation taken  taken from [@BusMix], with the remainder based on an anecdotal view of industry mix not intended to be reflective of any one business. 
+
+```{r Generate dataframe}
+# set the seed value (for the random number generator) so that the simulated data frame can be replicated later
+set.seed(10)
+# create 200k policies
+n <- 200000
+
+# data frame columns
+# policy_year skewed to early years, but tail is fat
+df <- data.frame(id = c(1:n), cal_year = 2018,policy_year = round(rweibull(n, scale=5, shape=2),0)) 
+df <- df %>% mutate(sex = replicate(n,sample(c("m","f","u"), size=1, replace=TRUE, prob=c(.75,.20,.05))),
+smoker = replicate(n,sample(c("n","s","u"), size=1, replace=TRUE, prob=c(.85,.1,.05))),
+# mix of business for benefit_period, waiting_period, occupation taken from industry presentation
+benefit_period = replicate(n,sample(c("a65","2yr","5yr"), size=1, replace=TRUE, prob=c(.76,.12,.12))),
+waiting_period = replicate(n,sample(c("14d","30d","90d","720d"), size=1, replace=TRUE, prob=c(.04,.7,.15,.11))),
+occupation = replicate(n,sample(c("prof","sed","techn","blue","white"), size=1, replace=TRUE, prob=c(.4,.2,.2,.1,.1))),
+# age and policy year correlated; age normally distributed around 40 + policy_year (where policy_year is distributed around 5 years), floored at 25, capped at 60
+age = round(pmax(pmin(rnorm(n,mean = 40+policy_year, sd = 5),60),25),0),
+# sum_assured, age and occupation are correlated; sum assured normally distributed around some mean (dependent on age rounded to 10 and on occupation), floored at 500
+sum_assured = 
+  round(
+    pmax(
+      rnorm(n,mean = (round(age,-1)*100+ 1000) * 
+      case_when(occupation %in% c("white","prof") ~ 1.5, occupation %in% c("sed") ~ 1.3 , TRUE ~ 1), 
+      sd = 2000),500),
+      0)
+  )
+# generate 3 years of exposure for the 200k policies => assume no lapses or new business
+df2 <- df %>% mutate(cal_year=cal_year+1,policy_year=policy_year+1,age=age+1)
+df3 <- df2 %>% mutate(cal_year=cal_year+1,policy_year=policy_year+1,age=age+1)
+df <- rbind(df,df2,df3)
+
+```
+
+## Expected claim rate 
+Set p values from which to simulate claims. The crude p values below were derived from the Society of Actuaries Analysis of USA Individual Disability Claim Incidence Experience from 2006 to 2014 [@SOA_study], with some allowance for Australian industry differentials [@BusMix_FSC].
+
+```{r Expected claim rate}
+# by cause, age and sex, based upon polynomials fitted to crude actual rates
+# sickness
+f_sick_age_m <- function(age) {-0.0000003*age^3 + 0.000047*age^2 - 0.00203*age + 0.02715}
+f_sick_age_f <- function(age) {-0.0000002*age^3 + 0.000026*age^2 - 0.00107*age + 0.01550} 	  	 	  
+f_sick_age_u <- function(age) {f_sick_age_f(age)*1.2}
+f_sick_age   <- function(age,sex) {case_when(sex == "m" ~ f_sick_age_m(age), sex == "f" ~ f_sick_age_f(age), sex == "u" ~ f_sick_age_u(age))}
+
+# accident
+f_acc_age_m <- function(age) {-0.00000002*age^3 + 0.000004*age^2 - 0.00020*age + 0.00340}
+f_acc_age_f <- function(age) {-0.00000004*age^3 + 0.000007*age^2 - 0.00027*age + 0.00374} 	  	 	  
+f_acc_age_u <- function(age) {f_sick_age_f(age)*1.2}
+f_acc_age   <- function(age,sex) {case_when(sex == "m" ~ f_acc_age_m(age), sex == "f" ~ f_acc_age_f(age), sex == "u" ~ f_acc_age_u(age))}
+
+# smoker, wp and occ based upon ratio of crude actual rates by category
+# occupation adjustment informed by FSC commentary on DI incidence experience
+f_smoker   <- function(smoker) {case_when(smoker == "n" ~ 1, smoker == "s" ~ 1.45, smoker == "u" ~ 0.9)}
+f_wp   <- function(waiting_period) {case_when(waiting_period == "14d" ~ 1.4, waiting_period == "30d" ~ 1, waiting_period == "90d" ~ 0.3, waiting_period == "720d" ~ 0.2)}
+f_occ_sick   <- function(occupation) {case_when(occupation == "prof" ~ 1, occupation == "sed" ~ 1, occupation == "techn" ~ 1, occupation == "blue" ~ 1, occupation == "white" ~ 1)}
+f_occ_acc   <- function(occupation) {case_when(occupation == "prof" ~ 1, occupation == "sed" ~ 1, occupation == "techn" ~ 4.5, occupation == "blue" ~ 4.5, occupation == "white" ~ 1)}
+
+# anecdotal allowance for higher rates at larger policy size and for older policies
+f_sa_sick <- function(sum_assured) {case_when(sum_assured<=6000 ~ 1, sum_assured>6000 & sum_assured<=10000 ~ 1.1, sum_assured>10000 ~ 1.3)}
+f_sa_acc <- function(sum_assured) {case_when(sum_assured<=6000 ~ 1, sum_assured>6000 & sum_assured<=10000 ~ 1, sum_assured>10000 ~ 1)}
+f_pol_yr_sick <- function(policy_year) {case_when(policy_year<=5 ~ 1, policy_year>5 & policy_year<=10 ~ 1.1, policy_year>10 ~ 1.3)}
+f_pol_yr_acc <- function(policy_year) {case_when(policy_year<=5 ~ 1, policy_year>5 & policy_year<=10 ~ 1, policy_year>10 ~ 1)}
+```
+
+## Expected claims
+Add the crude p values to the data and simulate 1 draw from a binomial with prob = p for each record. Gives us a vector of claim/no-claim for each policy. Some simplifying assumptions like independence of sample across years for each policy and independence of accident and sickness incidences.
+
+```{r Expected claims}
+# add crude expected
+df$inc_sick_expected=f_sick_age(df$age,df$sex)*f_smoker(df$smoker)*f_wp(df$waiting_period)*f_occ_sick(df$occupation)*f_sa_sick(df$sum_assured)*f_pol_yr_sick(df$policy_year)
+df$inc_acc_expected=f_acc_age(df$age,df$sex)*f_smoker(df$smoker)*f_wp(df$waiting_period)*f_occ_acc(df$occupation)*f_sa_acc(df$sum_assured)*f_pol_yr_acc(df$policy_year)
+# add prediction
+df$inc_count_sick = sapply(df$inc_sick_expected,function(z){rbinom(1,1,z)})
+df$inc_count_acc = sapply(df$inc_acc_expected,function(z){rbinom(1,1,z)})*(1-df$inc_count_sick)
+df$inc_count_tot = df$inc_count_sick + df$inc_count_acc
+# add amounts prediction
+df$inc_amount_sick = df$inc_count_sick * df$sum_assured
+df$inc_amount_acc =  df$inc_count_acc * df$sum_assured
+df$inc_amount_tot =  df$inc_count_tot * df$sum_assured
+```
+
+## Grouped data
+The data generated above are records for each individual policy, however data like this is often grouped as it is easier to store and computation is easier [@GLM_Insurance, p49, 105]. Later we will consider the differences between a model on ungrouped vs grouped data.
+
+```{r Grouped Data}
+# group data (see section on data manipulation below)
+df_grp <- df %>% group_by(cal_year, policy_year, sex, smoker, benefit_period, waiting_period, occupation, age) %>% 
+summarise(sum_assured=sum(sum_assured),inc_count_sick_exp=sum(inc_sick_expected),inc_count_acc_exp=sum(inc_acc_expected),        inc_count_sick=sum(inc_count_sick),inc_count_acc=sum(inc_count_acc),inc_count_tot=sum(inc_count_tot),inc_amount_sick=sum(inc_amount_sick),inc_amount_acc=sum(inc_amount_acc),inc_amount_tot=sum(inc_amount_tot), exposure=n(),.groups = 'drop') 
+
+```
+
+Check that the exposure for the grouped data is the same as the total on ungrouped:
+
+```{r Grouped Data - exposure}
+# check count - same as total row count of the main df
+sum(df_grp$exposure)
+```
+
+And that the number of rows of data are significantly lower:
+
+```{r Grouped Data - row count}
+# number of rows of the grouped data is significantly lower
+nrow(df_grp)
+```
+
+# Data Exploration 
+
+The sections below rely heavily upon the dplyr package. 
+
+## Data structure
+Looking at the metadata for the data frame and a sample of the contents.glimpse() or str() returns detail on the structure of the data frame. Our data consists of 600k rows and 15 columns. The columns are policy ID, several explanatory variables like sex and smoker, expected counts of claim (inc_sick_expected and inc_acc_expected) and actual counts of claim (inc_count_sick/acc/tot).
+
+```{r Data structure}
+glimpse(df)
+```
+
+head() returns the first 6 rows of the data frame. Similar to head(), sample_n() returns rows from our data frame, however these are chosen randomly. e.g. sample_n(df,5,replace=FALSE)
+
+```{r Data structure - sample}
+head(df)
+```
+
+```{r Data structure - class}
+# class() returns the class of a column.
+class(df$benefit_period)
+```
+
+## Factors
+From the above you'll note that the categorical columns are stored as characters. Factorising these makes them easier to work with in our models e.g. for BP factorise a65|2yr|5yr as 1|2|3. Factors are stored as integers and have labels that tell us what they are, they can be ordered and are useful for statistical analysis. 
+
+table() returns a table of counts at each combination of column values. prop.table() converts these to a proportion. For example, applying this to the column "sex" shows us that ~75% of our data is "m" and that the other data are either "f" or "u" (unknown).
+
+```{r Factorise columns - proportions}
+table(df$sex)
+prop.table(table(df$sex))
+```
+
+We can then convert the columns to factors based upon the values of the column and ordering by frequency. Base level should be chosen such that it has sufficient observations for an intercept to be computed meaningfully.
+
+```{r Factorise columns - factors}
+df$sex <- factor(df$sex, levels = c("m","f","u"))
+df$smoker <- factor(df$smoker, levels = c("n","s","u"))
+df$benefit_period <- factor(df$benefit_period, levels = c("a65","2yr","5yr"))
+df$waiting_period <- factor(df$waiting_period, labels = c("30d","14d","720d","90d"))
+df$occupation <- factor(df$occupation, labels = c("prof", "sed","techn","white","blue"))
+
+# do the same for the grouped data
+df_grp$sex <- factor(df_grp$sex, levels = c("m","f","u"))
+df_grp$smoker <- factor(df_grp$smoker, levels = c("n","s","u"))
+df_grp$benefit_period <- factor(df_grp$benefit_period, levels = c("a65","2yr","5yr"))
+df_grp$waiting_period <- factor(df_grp$waiting_period, labels = c("30d","14d","720d","90d"))
+df_grp$occupation <- factor(df_grp$occupation, labels = c("prof", "sed","techn","white","blue"))
+```
+
+If the column is already a factor, you can extract the levels to show what order they will be used in our models
+
+```{r Factorise columns - levels}
+levels(df$sex)
+```
+
+## Selection methods
+table() is a method of summarizing data, returning a count at each combination of values in a column. sample() and sample_n() are other examples of selection methods. This section (not exhaustive) looks at a few more selection methods in dplyr.
+
+```{r Selection Methods, eval=FALSE}
+# data subsets:  e.g. select from df where age <25 or >60 
+subset(df, age <25 | age > 60) 
+#	dropping columns:
+		# exclude columns
+		mycols <- names(df) %in% c("cal_year", "smoker")
+		new_df <- df[!mycols]
+		# exclude 3rd and 5th column
+		new_df <- df[c(-3,-5)]
+		# delete columns from new_df
+		new_df$pol_id <- NULL
+#	keeping columns: 
+		# select variables by col name
+		mycols <- names(df) %in% c("cal_year", "smoker")
+		new_df <- df[!mycols]
+		# select 1st and 5th to 7th variables
+    new_df <- df[c(1,5:7)]
+```
+
+## Manipulation methods
+We might want to modify our data frame to prepare it for fitting our models. The section below looks at a few simple data manipulations. Here we also introduce the infix operator (%>%); this operator passes the argument to the left of it over to the code on the right, so df %>% "operation" passes the data frame "df" over to the operation on the right.
+
+```{r Manipulation Methods, eval=FALSE}
+# create a copy of the dataframe to work from
+  new_df <- df
+# simple manipulations
+	# select as in the selection methods section, but using infix
+	new_df %>% select(id, age) # or a range using select(1:5) or select(contains("sick")) or select(starts_with("inc")); others e.g. ends_with(), last_col(), select(-age)
+	# replace values in a column
+	replace(new_df$sex,new_df$sex=="u","m") # no infix in base r
+	# Rename, id to pol_id
+	new_df %>% rename(pol_id = id)  #or (reversing the renaming)
+	new_df %>% select(pol_id = id)  
+	# alter data
+	new_df <- new_df %>% mutate(inc_tot_expected = inc_acc_expected + inc_sick_expected) # need to assign the output back to the data frame
+	# transmute - select and mutate simultaneously 
+	new_df2 <- new_df %>% transmute(id, age, birth_year = cal_year - age)
+	# sort
+	new_df %>% arrange(desc(age))
+	# filter
+	new_df %>% filter(benefit_period == "a65", age <65) # or
+	new_df %>% filter(benefit_period %in% c("a65","5yr"))
+# aggregations
+	# group by, also ungroup()
+	new_df %>% group_by(sex) %>% # can add a mutate to group by which will aggregate only to the level specified in the group_by e.g. 
+	mutate(sa_by_sex = sum(sum_assured)) # adds a new column with the total sum assured by sex.
+	# after doing this, ungroup() in order to apply future operations to all records individually
+	# count, sorting by most frequent and weighting by another column
+	new_df %>% count(sex, wt= sum_assured, sort=TRUE)  # counts the number of entries for each value of sex, weighted by sum assured
+	# summarize takes many observations and turns them into one observation. mean(), median(), min(), max(), and n() for the size of the group
+	new_df %>% summarize(total = sum(sum_assured), min_age = min(age), max_age = max(age), max(inc_tot_expected)) 
+	new_df %>% group_by(sex) %>% summarise(n = n())
+	table(new_df$sex) # returns count by sex; no infix in base r
+# outliers
+	new_df %>% top_n(10, inc_tot_expected) # also operates on grouped table - returns top n per group
+# window functions
+	# lag - offset vector by 1 e.g. v <- c(1,3,6,14); so - lag(v) = NA 1 3 6
+	new_df %>% arrange(id,age) %>% mutate(ifelse(id==lag(id),age - lag(age),1))
+```
+
+## Missing data
+By default, the regression model will exclude any observation with missing values on its predictors. Missing values can be treated as a separate category for categorical data. For missing numeric data, imputation is a potential solution. In the example below we replace missing age with an average and add an indicator to the data to flag records that have been imputed.
+
+```{r Missing data, eval=FALSE}
+# find the average age among non-missing values
+summary(df$age)
+# impute missing age values with the mean age
+df$imputed_age <- ifelse(is.na(df$age)==TRUE,round(mean(df$age, na.rm=TRUE),2),df$age)
+# create missing value indicator for age
+df$missing_age <- ifelse(is.na(df$age)==TRUE,1,0)
+```
+
+## Review exposure data 
+The tables and graphs that follow look at:
+
+* the mix of business over rating factors using some of the selection methods described: These are all consistent with the simulation specification. 
+* the correlation of ordered numerical rating factors: age and sum assured as well as age and policy year are positively correlated.
+
+Data might need to be [transformed](https://en.wikipedia.org/wiki/Data_transformation_(statistics)) in order to make the data more suitable to the assumptions within the model. Not considered here.
+
+```{r Detatch MASS, warning = FALSE, echo=FALSE, results = FALSE, include=FALSE}
+# MASS package interferes with pairs() and cor() and others
+require(arm) # package
+detach(package:arm)
+detach(package:msme)
+detach(package:MASS)
+```
+
+Look at distribution by single rating factors. Benefit period mix:
+
+```{r Review exposure data - bp, warning = FALSE, message=FALSE}
+df %>% count(benefit_period, wt = NULL, sort = TRUE) %>% mutate(freq = percent(round(n / sum(n),2))) %>% format(n, big.mark=",")
+```
+
+Waiting period mix:
+
+```{r Review exposure data - wp, warning = FALSE, message=FALSE}
+df %>% count(waiting_period, wt = NULL, sort = TRUE) %>% mutate(freq = percent(round(n / sum(n),2))) %>% format(n, big.mark=",")
+```
+
+Occupation mix:
+
+```{r Review exposure data - occ, warning = FALSE, message=FALSE}
+df %>% count(occupation, wt = NULL, sort = TRUE) %>% mutate(freq = percent(round(n / sum(n),2))) %>% format(n, big.mark=",")
+```
+
+Consider a histogram to show the distribution of numeric data.
+
+```{r Review exposure data - hist, warning = FALSE, message=FALSE}
+hist(df$age, main = "Histogram of age", xlab = "Age", ylab = "Frequency")
+hist(df$sum_assured, main = "Histogram of sum assured", xlab = "Sum assured", ylab = "Frequency")
+hist(df$policy_year, main = "Histogram of policy year", xlab = "Policy year", ylab = "Frequency")
+```
+
+Consider the correlation of ordered numeric explanatory variables.
+
+```{r Review exposure data - correlation, warning = FALSE, message=FALSE}
+# correlation of ordered numeric explanatory variables
+#	pairs() gives correlation matrix and plots; test on a random sample from our data
+df_sample <- sample_n(df,10000,replace=FALSE) 
+df_sample %>% select(age,policy_year,sum_assured) %>% pairs
+# or cor() to return just the correlation matrix
+cor <-df_sample %>% select(age,policy_year,sum_assured) %>% cor
+cor
+# corrplot() is an alternative to visualise a correlation matrix
+corrplot(cor, 
+  addCoef.col = "black", # add coefficient of correlation
+  method="color", 
+  sig.level = 0.01, insig = "blank", 
+  tl.col="black", # tl stands for text label
+  tl.srt=45
+  ) 
+```
+
+ggpairs() similarly shows correlations for ordered numeric data as well as other summary stats:
+
+```{r Review exposure data - ggpairs, warning = FALSE, message=FALSE}
+#ggpairs() similarly shows correlations for ordered numeric data as well as other summary stats
+df_sample %>% select(age,policy_year,sum_assured,sex, smoker) %>% 
+ggpairs(columns = 1:3, aes(color = sex, alpha = 0.5),
+        upper = list(continuous = wrap("cor", size = 2.5)),
+        lower = list(continuous = "smooth"))
+
+df_sample %>% select(age,policy_year,sum_assured,sex, smoker) %>% 
+ggpairs(columns = c("sum_assured", "smoker"), aes(color = sex, alpha = 0.5))
+```
+
+Review summary statistics for subsets of data.
+
+```{r Review exposure data - summary, warning = FALSE, message=FALSE}
+head(aggregate(df$sum_assured~df$age,data=df,mean))
+```
+
+## Data format
+There are two main formats for structured data - long and wide. For regression, the structure of data informs the model structure. For counts data:
+
+* the long format corresponds to Bernoulli (claim or no claim for each observation) and allows for predictor variables by observation;
+* the wide format correspond to Binomial (count of claims per exposure). Wide format structures can include matrix of successes and failures or a proportion of successes and corresponding weights / number of observations/exposure for each line.
+
+There are several tidyverse functions that can help with restructuring data, for example, convert data into wide format e.g.separate into a separate column for each value of sex:
+
+```{r Data format}
+head(spread(df_sample, sex, inc_count_tot, fill = 0))
+```
+
+gather() converts data into long format; # also pivot_longer() and pivot_wider().
+
+## Visualisation methods
+
+### Introduction to ggplot
+This section sets out some simple visualisation methods using ggplot(). ggplot() Initializes a ggplot object. It can be used to declare the input data frame for a graphic and to specify the set of plot aesthetics intended to be common throughout all subsequent layers unless specifically overridden [@ggplot]. The form of ggplot is:
+
+ggplot(data = df, mapping = aes(x,y, other aesthetics), ...)
+
+Examples below use ggplot to explore the exposure data.
+
+```{r Visualisation methods}
+
+# data argument passes the data frame to be visualised
+# mapping argument defines a list of aesthetics for the visualisation - all subsequent layers use those unless overridden
+# typically, the dependent variable is mapped onto the the y-axis and the independent variable is mapped onto the x-axis.
+ggplot(data=df_sample, mapping=aes(x=age, y=sum_assured)) + # the '+' adds the layer below
+# add subsequent visualisation layers, e.g. geom_point() for scatterplot
+geom_point() +
+# add a layer to change axis labels
+# could add a layer to specify axis limits with ylim() and xlim() 
+labs(x="Age", y="Sum assured", title = "Sum Assured by age")
+```
+
+### Layers 
+
+The aesthetics input has a number of different options, for example x and y (axes),	colour,	size,	fill,	labels,	alpha (transparency),	shape,	line type/ width. You can change the aesthetics of each layer or default to the base layer. You can change the general look and feel of charts with a themes layer e.g. colour palette (see more in the next section).	
+
+You can add more layers to the base plot, for example
+
+* Geometries (geom_), for example	
+  + [point](https://ggplot2.tidyverse.org/reference/geom_point.html) - scatterplot,	
+  + line,	
+  + histogram,	
+  + bar/ column, 
+  + boxplot, 
+  + density, 
+  + [jitter](https://ggplot2.tidyverse.org/reference/geom_jitter.html) - adds random noise to separate points, 
+  + [count](https://ggplot2.tidyverse.org/reference/geom_count.html) - counts the number of observations at each location, then maps the count to point area,
+  + [abline](https://ggplot2.tidyverse.org/reference/geom_abline.html) - adds a reference line - vertical, horizontal or diagonal,
+  + [curve](https://ggplot2.tidyverse.org/reference/geom_segment.html) - adds a curved line to the chart between specified points, 
+  + text - add a text layer to label data points.		
+* Statistics (stat_)  
+  + [smooth](https://ggplot2.tidyverse.org/reference/geom_smooth.html) (curve fitted to the data),	
+  + bin (e.g. for histogram).	
+
+A note on overlapping points: these can be adjusted for by adding noise and transparency to your points:
+
+* within an existing geom e.g. geom_point(position="*") with options including: identity (default = position is as per data), dodge (dodge overlapping objects side-to-side), jitter (random noise), jitterdodge, and nudge (nudge points a fixed distance) e.g. geom_bar(position = "dodge") or geom_bar(position=position_dodge(width=0.2)).
+* or use geom_* with arguments e.g. geom_jitter(alpha = 0.2, shape=1). Shape choice might help, shape = 1 gives hollow circles.
+
+Or alternatively count overlapping points with geom_count().
+
+
+A full list of layers is available [here](https://ggplot2.tidyverse.org/reference/).
+
+```{r Visualisation methods - layers}
+
+ggplot(data=df_sample, aes(x=age, y=sum_assured)) +
+geom_point() + 
+# separate overlapping points
+geom_jitter(alpha = 0.2, width = 0.2) +
+# add a smoothing line
+geom_smooth(method = "glm", se=FALSE) 
+
+```
+
+### Themes
+You can add a themes layer to your graph [@ggplot_themes], for example 
+
+* theme_gray()        |Gray background and white grid lines.
+* theme_bw()          |White background and gray grid lines. 
+* theme_linedraw()    |A theme with only black lines of various widths on white backgrounds.
+* theme_light()       |A theme similar to theme_linedraw() but with light grey lines and axes, to direct more attention towards the data.
+* theme_dark()        |Similar to theme_light() but with a dark background.
+* Others              |e.g. theme_minimal() and theme_classic()
+
+Other packages like ggthemes carry many more options. Example of added themes layer below. See also these examples [these examples](https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/) from ggthemes.
+
+```{r Visualisation methods - themes, warning = FALSE, message=FALSE}
+
+# add an occupation group to the data
+df_sample <- df_sample %>% mutate(occ_group = factor(case_when(occupation %in% c("white","prof","sed") ~ "WC", TRUE ~ "BC")))
+
+# vary colour by occupation
+ggplot(data=df_sample, aes(x=age, y=sum_assured, color=occ_group)) +
+# jitter and fit a smoothed line as below
+geom_jitter(alpha = 0.2, width = 0.2) +
+geom_smooth(method = "glm", se=FALSE) +
+# add labels
+labs(x="Age", y="Sum assured", title = "Sum Assured by age") +
+# adding theme and colour palette layers
+theme_pander() + scale_color_gdocs()
+```
+
+### 3D visualisations with plotly
+ggplot does not cater to 3D visualisations, but this can be done through plotly simply. 
+
+```{r Visualisation methods - 3D, warning = FALSE, message=FALSE}
+
+plot_base <- plot_ly(data=df_sample, z= ~sum_assured, x= ~age, y=~policy_year, opacity=0.6) %>%
+add_markers(color = ~occ_group,colors= c("blue", "red"), marker=list(size=2)) 
+# show graph
+plot_base
+
+```
+
+We can add a modeled outcome to the 3D chart. For detail on the model fit, see later sections. 
+
+```{r Visualisation methods - 3D plane, warning = FALSE, message=FALSE}
+
+# to add a plane we need to define the points on the plane. To do that, we first create a grid of x and y values, where x and y are defined as earlier.
+x_grid <- seq(from = min(df_sample$age), to = max(df_sample$age), length = 50)
+y_grid <- seq(from = min(df_sample$policy_year), to = max(df_sample$policy_year), length = 50)
+
+# create a simple model and extract the coefficient estimates
+coeff_est <- glm(sum_assured ~ age + policy_year + occ_group,family="gaussian",data=df_sample) %>% coef()
+# extract fitted values for z - here we want fitted values for BC and WC separately, use levels to determine how the model orders the factor occ_group
+fitted_values_BC <- crossing(y_grid, x_grid) %>% mutate(z_grid = coeff_est[1] + coeff_est[2]*x_grid + coeff_est[3]*y_grid)
+fitted_values_WC <- crossing(y_grid, x_grid) %>% mutate(z_grid = coeff_est[1] + coeff_est[2]*x_grid + coeff_est[3]*y_grid + coeff_est[4])
+# convert to matrix
+z_grid_BC <- fitted_values_BC %>% pull(z_grid) %>% matrix(nrow = length(x_grid)) %>% t()
+z_grid_WC <- fitted_values_WC %>% pull(z_grid) %>% matrix(nrow = length(x_grid)) %>% t()
+
+# define solid colours for the two planes/ surfaces
+colorscale_BC = list(c(0, 1), c("red", "red"))
+colorscale_WC = list(c(0, 1), c("blue", "blue"))
+
+# use plot base created above, add a surface for BC sum assureds and WC sum assureds
+plot_base %>%
+    add_surface(x = x_grid, y = y_grid, z = z_grid_BC, showscale=FALSE, colorscale=colorscale_BC) %>%
+    add_surface(x = x_grid, y = y_grid, z = z_grid_WC, showscale=FALSE, colorscale=colorscale_WC) %>% 
+    # filtering sum assured on a narrower range
+    layout(scene = list(zaxis = list(range=c(4000,12000))))
+
+
+
+```
+
+## Review claim data
+
+Consider claim vs no claim. should be close to nil overlapping clams. actual claim rate is ~0.003-0.005.
+
+```{r Review claim data}
+df %>% select(inc_count_acc,inc_count_sick) %>% table()
+```
+
+Plotting claim vs no claim by age and sex:
+
+```{r Review claim data - plots}
+# use ggplot to plot inc_count_sick by age and sex; using df_sample from earlier
+# clearly all of the points are going to be at 0 or 1 and will overlap at each age -> not useful.
+df_sample %>% ggplot(aes(x=age,y=inc_count_sick,color=sex)) +
+geom_point() +
+theme_pander() + scale_color_gdocs()
+```
+
+As above but add some random noise around the points to separate them:
+
+```{r Review claim data - plots jitter}
+df_sample %>% ggplot(aes(x=age,y=inc_count_sick,color=sex)) +
+geom_point(position=position_jitter(height=0.1)) +
+theme_pander() + scale_color_gdocs()
+```
+
+As above but excluding unknown sex and adding a smoothing line:
+
+```{r Review claim data - plots jitter refined}
+# as above but excluding unknown sex (as there are very few claims observed for that group) and adding a smoothing line (setting method as glm)
+# because the claim rate is so low, the smoothed line is very close to zero and so not a particularly useful visualisation.
+df_sample %>% filter(sex != "u") %>% ggplot(aes(x=age,y=inc_count_sick,color=sex)) +
+geom_point(position=position_jitter(height=0.1)) + 
+geom_smooth(method="glm", method.args = list(family = "binomial")) + # or list(family = binomial(link='logit')
+theme_pander() + scale_color_gdocs()
+```
+
+Looking at total count of claim rather than just sickness shows a slight trend by age:
+
+```{r Review claim data - plots jitter total count}
+df_sample %>% filter(sex != "u") %>% ggplot(aes(x=age,y=inc_count_tot,color=sex)) +
+geom_point(position=position_jitter(height=0.1)) + 
+geom_smooth(method="glm", method.args = list(family = "binomial")) + # or list(family = binomial(link='logit')
+theme_pander() + scale_color_gdocs()
+```
+
+Consider claim rate:
+
+```{r Review claim data - plot claim rate, warning = FALSE, message=FALSE}
+# given the actual count of claims is so low, it might be more useful to consider the claim rate
+# use the manipulation methods from earlier to get claim rates by age and sex for accident and sickness; filter out unknown sex and age with low exposure
+# this shows a clear trend by age for males and females
+df_grouped <- df %>% filter(sex != "u", between(age, 30,60)) %>% group_by(age,sex) %>% summarise(total_sick=sum(inc_count_sick),total_acc=sum(inc_count_acc), exposure=n(),.groups = 'drop') %>% 
+mutate(sick_rate = total_sick/exposure, acc_rate = total_acc/exposure)
+# used ggplot to graph the results
+df_grouped %>%
+ggplot(aes(x=age,y=sick_rate,color=sex)) +
+geom_point() +
+geom_line() +
+# add a smoothing line
+geom_smooth(method = 'glm',se=FALSE) +
+# add labels and themes
+labs(x="Age", y="sick rate", title = "Sickness rate by age") +
+theme_pander() + scale_color_gdocs()
+```
+
+We can split the graph above into a few tiles to show the rates by other explanatory variables like occupation using [facet_wrap](https://ggplot2-book.org/facet.html); see also "facet_grid". Can use grid.arrange(plot_1,plot_2, plot_3) from the pdp package to arrange unrelated pplot items.
+
+```{r Review claim data - more vis, warning = FALSE, message=FALSE}
+# as above, but adding occupation
+df_grouped <- df %>% filter(sex != "u", between(age, 30,60)) %>% group_by(age,sex,occupation) %>% summarise(total_sick=sum(inc_count_sick),total_acc=sum(inc_count_acc), exposure=n(),.groups = 'drop') %>% mutate(sick_rate = total_sick/exposure, acc_rate = total_acc/exposure) 
+
+df_grouped %>%
+# used ggplot to graph the results
+ggplot(aes(x=age,y=sick_rate,color=sex)) +
+geom_point() +
+geom_line() +
+# add a smoothing line
+geom_smooth(method = 'glm',se=FALSE) +
+labs(x="Age", y="sick rate", title = "Sickness rate by age, occupation") +
+theme_pander() + scale_color_gdocs() +
+facet_wrap(~occupation, ncol=2, nrow=3)
+```
+
+Consider sickness rate by occupation:
+
+```{r Review claim data - boxplot, warning = FALSE, message=FALSE}
+df_grouped %>%
+# used ggplot to graph the results
+ggplot(aes(x=occupation,y=sick_rate)) +
+geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)+
+# add a smoothing line
+labs(x="Age", y="sick rate", title = "Sickness rate by age, occupation") +
+theme_pander() + scale_color_gdocs() +
+facet_wrap(~sex, ncol=2, nrow=3)
+```
