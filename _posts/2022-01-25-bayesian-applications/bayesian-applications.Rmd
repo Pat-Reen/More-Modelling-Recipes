@@ -695,7 +695,8 @@ Summary of the results below:
 
 * The mean of the `b` chain value was -0.040. This is an *estimate* of the posterior mean of `b`. This is consistent with the GLM above
 * The corresponding *naive standard error*, 0.000253, measures the potential *error* in this estimate. This error is calculated by dividing the standard deviation of the `b` chain values by the square root of the number of iterations (or sample size). This is a *naive* approach to calculating error in a setting with dependent samples.
-* The density plots for 
+
+Also showing the density plots for the posteriors as well as the trace plots for each of the chains.
 
 ```{r Usage rjags regression - summary, message=FALSE}
 summary(usage_posterior)
