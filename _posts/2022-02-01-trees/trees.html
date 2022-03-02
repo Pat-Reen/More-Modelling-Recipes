@@ -1503,6 +1503,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <ul>
 <li><a href="#gini-impurity">Gini impurity</a></li>
 <li><a href="#entropy">Entropy</a></li>
+<li><a href="#information-gain">Information gain</a></li>
+<li><a href="#information-gain-ratio">Information gain ratio</a></li>
 </ul></li>
 <li><a href="#classification-tree-example">Classification tree example</a></li>
 <li><a href="#regression-tree">Regression tree</a>
@@ -1615,6 +1617,14 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <h3 id="entropy">Entropy</h3>
 <p>Entropy is a concept in information theory introduced by Claude Shannon in his 1948 paper “A Methematical Theory of Communication”. It is denoted as follows <span class="math display">\[ H(x) =  - \sum_{i=1}^n P(x_i)ln(P(x_i))\]</span></p>
 <p>Entropy varies between <span class="math inline">\([0, 1]\)</span> while Gini impurity varies <span class="math inline">\([0,0.5]\)</span>. The two have very similar distribution especially when Entropy is compared to twice of the Gini impurity. The conclusion from the two are mostly the same (only disagree in 2% of time). In many cases Gini impurity is favoured, as Entropy requires more computational power for using log function.</p>
+<h3 id="information-gain">Information gain</h3>
+<p>After we get (information) entropy, we can calculate the information gain for a particular feature when learning.</p>
+<p>Suppose one of the features is gender. If we choose to split dataset by gender, then can be sub-divided into 2 groups, <span class="math inline">\(D_{male}\)</span> and <span class="math inline">\(D_{female}\)</span>. So the entropy after splitting by gender, is the weighted average of the entropy of the two sets <span class="math display">\[ \frac{D_{male}}{D}H(D_{male}) + \frac{D_{female}}{D}H(D_{female})\]</span> When compared to the information entropy prior to the split, the reduction is the information gain, denoted as <span class="math display">\[ Gain(D, feature)=H(D)-\sum^{N}_{i=1}\frac{D_i}{D}H(D_i)  \]</span> The information gain is then used to determine whether it’s better or worse off to perform a further split, and which feature yields higher gain.</p>
+<h3 id="information-gain-ratio">Information gain ratio</h3>
+<p>One potential issue with information gain is that it prefers features with more categories. For instance, if we choose to split by personal ID which is a unique value, the entire dataset will be divided into <span class="math inline">\(N\)</span> groups where <span class="math inline">\(N\)</span> is also the number of data points. In this case, the entropy of each group will be zero given there is only 1 observation and the accuracy of classification reaches 100%, which then makes the second term (average entropy after split) of above formula zero. Apparently such division is not meaningful even though it maximises the information gain.</p>
+<p>To improve this, the information gain ratio was developed. It is written as <span class="math display">\[ Gain\_ratio(D, feature)=\frac{Gain(D, feature)}{IV(feature)}\]</span> where <span class="math inline">\(IV(feature)\)</span> can be further denoted as <span class="math display">\[ IV(feature)=-\sum_{i=1}^N \frac{D_i}{D}ln(\frac{D_i}{D})\]</span></p>
+<p>This looks similar to information entropy, which essentially evaluates the purity of the feature. If the feature only has few categories, it’s “purer” and the <span class="math inline">\(IV\)</span> values is smaller, vice versa. Therefore it adds a penalty on selecting features with many categories.</p>
+<p>However, information gain ratio is still not perfect, as it tends to choose features with less categories. Therefore, C4.5, a typical algorithm that uses information gain ratio, also uses information gain. It first calculates the average of information gain of all possible splits, and then choose the split with information gain above this average but also has the maximum information gain ratio, as the best split.</p>
 <h2 id="classification-tree-example">Classification tree example</h2>
 <p>Let’s model whether a policy has any claim incident, by looking at indicator of sickness (<span class="math inline">\(\text{inc_count_sick}\)</span>) and accident (<span class="math inline">\(\text{inc_count_acc}\)</span>). Apparently the dependent variable (<span class="math inline">\(\text{inc_count_tot}\)</span>) is fully determined by the two indicators. “Class” method is used here to train the classification tree.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -1875,7 +1885,7 @@ Area under the curve: 0.6683</code></pre>
 </ul>
 <h2 id="introduction-of-xgboost">Introduction of XGBoost</h2>
 <p>XGBoost stands for eXtreme Gradient Boosting and is developed on the framework of gradient boosting by Tianqi Chen et. al. It inherits the nature of GBDT model and has made several enhancements to be more powerful and efficient.</p>
-<p>One of the main features about XGBoost is that it has been able to build tree components in parallel. Like naive GBDT, It generates trees sequentially. However within a single tree, the child nodes are mutually independent. Thus each of these child nodes can be allocated to one core (or thread), to compute further split from the child node.</p>
+<p>One of the main features about XGBoost is that it has enabled parallel computing. Unlike random forest where each tree is mutually independent, XGBoost needs to generate trees in sequence due to the nature of ‘boosting’ algorithm. The way it realises parallel learning is by introducing a block structure. As stated in the paper, the most timing consuming part of tree learning is to get the data into sorted order. The algorithm stores data in in-memory units called “block”, with each column sorted by the corresponding feature value. By doing so, the input data only needs to be computed once before training, and the blocks can be re-used in later iterations.</p>
 <p>While machine learning algorithms have support for tuning and can work with external programs, XGBoost has built-in parameters for regularisation and cross-validation to make sure both bias and variance is kept at a minimal.</p>
 <h2 id="xgboost-vs-gbdt">XGBoost vs GBDT</h2>
 <ul>
@@ -1960,7 +1970,7 @@ Will train until val_logloss hasn&#39;t improved in 50 rounds.
 [11]    train-logloss:0.626841  val-logloss:0.627098 
 [21]    train-logloss:0.608407  val-logloss:0.609164 
 [31]    train-logloss:0.596259  val-logloss:0.597345 
-[41]    train-logloss:0.585438  val-logloss:0.586822 
+[41]    train-logloss:0.585437  val-logloss:0.586822 
 [51]    train-logloss:0.577686  val-logloss:0.579186 
 [61]    train-logloss:0.571024  val-logloss:0.572678 
 [71]    train-logloss:0.565648  val-logloss:0.567431 
