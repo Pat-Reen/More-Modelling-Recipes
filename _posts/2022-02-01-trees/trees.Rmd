@@ -139,6 +139,8 @@ $$ IV(feature)=-\sum_{i=1}^N \frac{D_i}{D}ln(\frac{D_i}{D})$$
 
 This looks similar to information entropy, which essentially evaluates the purity of the feature. If the feature only has few categories, it's "purer" and the $IV$ values is smaller, vice versa. Therefore it adds a penalty on selecting features with many categories.
 
+However, information gain ratio is still not perfect, as it tends to choose features with less categories. Therefore, C4.5, a typical algorithm that uses information gain ratio, also uses information gain. It first calculates the average of information gain of all possible splits, and then choose the split with information gain above this average but also has the maximum information gain ratio, as the best split. 
+
 ## Classification tree example
 Let's model whether a policy has any claim incident, by looking at indicator of sickness ($\text{inc_count_sick}$) and accident ($\text{inc_count_acc}$). Apparently the dependent variable ($\text{inc_count_tot}$) is fully determined by the two indicators. "Class" method is used here to train the classification tree.
 
