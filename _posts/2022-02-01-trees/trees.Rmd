@@ -296,7 +296,7 @@ roc(new_test2$inc_count_tot ~ rf.predict2[,2], plot = TRUE, print.auc = TRUE)
 
 # XGBoost
 ## A gentle intro to gradient boosting
-Before talking about XGBoost, let's take a look at gradient boosting decision trees (GBDT). Unlike Bagging technique used by random forest, Boosting sums up all the trees instead of taking majority vote. All the trees (or weak learners) are dependent. At every training iteration, the mis-classified samples at the previous training step will be assigned higher weight. The predicted outcome is the weighted sum of all the learners.
+Before talking about XGBoost, let's take a look at gradient boosting decision trees (GBDT). Unlike Bagging technique used by random forest, Boosting sums up all the trees instead of taking majority vote. All the trees (or weak learners) are dependent. At every training iteration, the misclassified samples at the previous training step will be assigned higher weight. The predicted outcome is the weighted sum of all the learners.
 
 As an example, to predict the age of a person (say actual value is 40):
 * the GBDT model trains the first weak learner (or tree) to make a prediction of 30. Apparently the variance of this prediction against actual value is 10. 
@@ -341,18 +341,18 @@ Difference:
 ## Introduction of XGBoost
 XGBoost stands for eXtreme Gradient Boosting and is developed on the framework of gradient boosting by Tianqi Chen et. al. It inherits the nature of GBDT model and has made several enhancements to be more powerful and efficient.
 
-One of the main features about XGBoost is that it has enabled parallel computing. Unlike random forest where each tree is mutually independent, XGBoost needs to generate trees in sequence due to the nature of 'boosting' algorithm. The way it realises parallel learning is by introducing a block structure. As stated in the paper, the most timing consuming part of tree learning is to get the data into sorted order. The algorithm stores data in in-memory units called "block", with each column sorted by the corresponding feature value. By doing so, the input data only needs to be computed once before training, and the blocks can be re-used in later iterations.
+One of the main features about XGBoost is that it has enabled parallel computing. Unlike random forest where each tree is mutually independent, XGBoost as a variant of GBDT still needs to generate trees in sequence. The way it realises parallel learning is by introducing a block structure. As stated in the paper, the most timing consuming part of tree learning is to get the data into sorted order. The algorithm stores data in in-memory units called "block", with each column sorted by the corresponding feature value. By doing so, the input data only needs to be computed once before training, and the blocks can be re-used in later iterations.
 
 While machine learning algorithms have support for tuning and can work with external programs, XGBoost has built-in parameters for regularisation and cross-validation to make sure both bias and variance is kept at a minimal.
 
-## XGBoost vs GBDT
+## XGBoost vs Original GBDT
 * XGBoost uses L2 norm which controls over-fitting and allows model to converge faster than L1 norm. For more information about regularisation, this article is a good reading https://www.kaggle.com/residentmario/l1-norms-versus-l2-norms
 
-* GBDT only uses the first order derivative of the loss function, while XGBoost uses both the first and second order derivatives (by Taylor series). Second order derivative allows gradient to descend faster in the right direction.
+* The original GBDT only uses the first order derivative of the loss function, while XGBoost uses both the first and second order derivatives (by Taylor series). Second order derivative allows gradient to descend faster in the right direction.
 
-* GBDT uses tree base learner, while XGBoost also supports other types such as linear learner. Though in most cases, we may not use linear learner as a base learner, because adding multiple linear models together still yields a linear model.
+* The original GBDT uses tree base learner, while XGBoost also supports other types such as linear learner. Though in most cases, we may not use linear learner as a base learner, because adding multiple linear models together still yields a linear model.
 
-* Naive GBDT uses all data points in every iteration. XGBoost randomly samples the data to prevent over-fitting.
+* The original GBDT uses all data points in every iteration. XGBoost randomly samples the data to prevent over-fitting.
 
 * XGBoost can handle missing values. Common treatments are to: 1) use median values, or 2) do so but also consider the similarity of the data point against all others (proximity measures). The strategy in XGBoost is to put all samples where the value of the split feature is unknown in one of the two children (left or right sub-tree), whichever side gives optimised training loss. Clever isn't it? This assumes that the training data and predicting data have same distribution.
 
