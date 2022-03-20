@@ -100,7 +100,7 @@ The paper goes on to talk about some of the insurance challenges in detail inclu
 * impact of co-morbidities
 * correlation with financial incentive
 
-Based upon data from a single insurer ~19% of TP and TPD claims relate to mental health, with mental health claims contributing 26% to the total cost of claims (in 2015, @GreenPaper, p17). This is roughly consistent with the proportion of the general population that experiences an episode of mental illness in a 12 month period, @ProdComm, p110.
+Based upon data from a single insurer ~19% of IP and TPD claims relate to mental health, with mental health claims contributing 26% to the total cost of claims (in 2015, @GreenPaper, p17). This is roughly consistent with the proportion of the general population that experiences an episode of mental illness in a 12 month period, @ProdComm, p110.
 
 In this simple example, we want to know what the rate of mental illness, $\theta$ is in the insured population. Assume some true underlying $\theta$, here a fixed value of 20%.  Create a population, $X$ with $X \sim B(N,\theta)$ where N=100000. Pull a random sample from population.
 
@@ -330,30 +330,30 @@ df_heart_test <- df_heart[-sample_rows,]
 Fit a simple GLM using all data:
 
 ```{r Heart glm}
-full_model_glm <- glm(PREVCHD~.,data=df_heart_train, family = "binomial")
-summary(full_model_glm)
+full_model_glm_heart <- glm(PREVCHD~.,data=df_heart_train, family = "binomial")
+summary(full_model_glm_heart)
 ```
 
 Use stepwise regression to reduce the explanatory variables:
 
 ```{r Heart stepwise regression, results='hide', message=FALSE}
 # specify a null model with no predictors
-null_model_glm <- glm(PREVCHD ~ 1, data = df_heart_train, family = "binomial")
+null_model_glm_heart <- glm(PREVCHD ~ 1, data = df_heart_train, family = "binomial")
 # use a forward stepwise algorithm to build a parsimonious model
-step_model_glm <- step(null_model_glm, scope = list(lower = null_model_glm, upper = full_model_glm), direction = "forward")
+step_model_glm_heart <- step(null_model_glm_heart, scope = list(lower = null_model_glm_heart, upper = full_model_glm_heart), direction = "forward")
 ```
 
 Summary of the model:
 
 ```{r Heart stepwise regression - summary}
-summary(step_model_glm)
+summary(step_model_glm_heart)
 ```
 
 Dropping BPMEDS, HEARTRTE and BMI as little impact on AIC:
 
 ```{r Heart final regression - summary}
-final_model_glm <- glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data = df_heart_train)
-summary(final_model_glm)
+final_model_glm_heart <- glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data = df_heart_train)
+summary(final_model_glm_heart)
 ```
 
 Fit a Bayes glm using the same explanatory variables. Here parameter estimates no longer have test statistics and p-values as in the frequentist regression. This is because Bayesian estimation samples from the posterior distribution. This means that instead of a point estimate and a test statistic, we get a distribution of plausible values for the parameters, and the estimates section of the summary summarizes those distributions.
@@ -361,28 +361,28 @@ Fit a Bayes glm using the same explanatory variables. Here parameter estimates n
 Further documentation on Bayesian generalised linear models via Stan [is here](https://mc-stan.org/rstanarm/reference/stan_glm.html). Documentation on choice of priors [is here](http://mc-stan.org/rstanarm/articles/priors.html). If priors are not specified, default weekly informative priors are used - you can call a summary of the modeled priors (see below). Default priors are autoscaled to make them less informative (see below for notes on scaling).
 
 ```{r Heart rstanarm glm, results='hide', message=FALSE}
-model_bayes_glm <- stan_glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data=df_heart_train, iter=2000, warmup=500)
+model_bayes_glm_heart <- stan_glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data=df_heart_train, iter=2000, warmup=500)
 # chains is number of sample paths from posterior; iter is number of samples within a chain; warmup is number of iterations to discard
 ```
 
 A summary of the model below. "Sigma" is the standard deviation of the errors; "mean_PPD" is the mean of the posterior predictive samples.MCMC diagnostics - "RHat" is a measure of within chain variance compared to across chain variance (<1.1 implies convergence); "log-posterior" is similar to likelihood.
 
 ```{r Heart rstanarm glm - summary}
-print(summary(model_bayes_glm),digits=4)
+print(summary(model_bayes_glm_heart),digits=4)
 ```
 
 The stan model used default normal priors for intercepts and coefficients. Default priors are automatically scaled to limit how informative they are - below we can see the adjusted (scaled) prior for the coefficients differs from the default 2.5:
 
 ```{r Heart rstanarm glm - priors}
 # summary of priors
-print(prior_summary(model_bayes_glm),digits=4)
+print(prior_summary(model_bayes_glm_heart),digits=4)
 ```
 
 Credible intervals express the probability that a parameter falls within a given range (vs a confidence interval which is the probability that a range contains the true value of the parameter). These credible intervals are computed by finding the relevant quantiles of the draws from the posterior distribution. They produce similar ranges to the confidence intervals from the frequentist approach.
 
 ```{r Heart rstanarm glm - cred}
-confint(final_model_glm, level=0.95)
-posterior_interval(model_bayes_glm, prob=0.95)
+confint(final_model_glm_heart, level=0.95)
+posterior_interval(model_bayes_glm_heart, prob=0.95)
 ```
 
 ### Adjusting scales and changing priors
@@ -400,12 +400,12 @@ To allow for varying distributions across the priors, we need to define the mode
 Specifying our own priors below. Little impact on the posterior estimates.
 
 ```{r Heart rstanarm glm - adj, message=FALSE}
-model_bayes_glm_scale <- stan_glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data=df_heart_train, iter=2000, warmup=500,
+model_bayes_glm_heart_scale <- stan_glm(PREVCHD ~ AGE + SEX + PREVHYP + DIABETES + TOTCHOL, family = "binomial",data=df_heart_train, iter=2000, warmup=500,
                             prior_intercept = normal(location = 0, scale = 10, autoscale = FALSE),
                             prior = normal(location = 0, scale = 5, autoscale = FALSE),
                             prior_aux = exponential(rate = 1, autoscale = FALSE)
                             )
-print(summary(model_bayes_glm_scale),digits=4)
+print(summary(model_bayes_glm_heart_scale),digits=4)
 ```
 
 ### Model fit
@@ -415,7 +415,7 @@ We are able to extract predictions from each iteration of the posterior sampling
 >"The posterior predictive distribution (posterior_predict) is the distribution of the outcome implied by the model after using the observed data to update our beliefs about the unknown parameters in the model. Simulating data from the posterior predictive distribution using the observed predictors is useful for checking the fit of the model. Drawing from the posterior predictive distribution at interesting values of the predictors also lets us visualize how a manipulation of a predictor affects (a function of)the outcome(s). With new observations of predictor variables we can use the posterior predictive distribution to generate predicted outcomes." 
 
 ```{r Heart rstanarm glm - posteriors}
-posteriors <- posterior_predict(model_bayes_glm,newdata=df_heart_test)
+posteriors <- posterior_predict(model_bayes_glm_heart,newdata=df_heart_test)
 posterior <- as.data.frame(posteriors) # each column is a data point from the dataset and each row is a prediction
 # Print 10 predictions for 5 lives
 print("10 predictions for 5 lives")
@@ -426,13 +426,13 @@ We can plot the posterior distributions for the model parameters from the sample
 
 ```{r Heart rstanarm glm - plot posteriors}
 
-posterior <- as.matrix(model_bayes_glm)
+posterior_heart <- as.matrix(model_bayes_glm_heart)
 
-plot1<- mcmc_areas(posterior, pars = c("AGE"), prob = 0.80)
-plot2<- mcmc_areas(posterior, pars = c("SEX"), prob = 0.80)
-plot3<- mcmc_areas(posterior, pars = c("PREVHYP"), prob = 0.80)
-plot4<- mcmc_areas(posterior, pars = c("DIABETES"), prob = 0.80)
-plot5<- mcmc_areas(posterior, pars = c("TOTCHOL"), prob = 0.80)
+plot1<- mcmc_areas(posterior_heart, pars = c("AGE"), prob = 0.80)
+plot2<- mcmc_areas(posterior_heart, pars = c("SEX"), prob = 0.80)
+plot3<- mcmc_areas(posterior_heart, pars = c("PREVHYP"), prob = 0.80)
+plot4<- mcmc_areas(posterior_heart, pars = c("DIABETES"), prob = 0.80)
+plot5<- mcmc_areas(posterior_heart, pars = c("TOTCHOL"), prob = 0.80)
 
 grid.arrange(plot1,plot2, plot3, plot4, plot5, top="Posterior distributions (median + 80% intervals)")
 ```
@@ -440,7 +440,7 @@ grid.arrange(plot1,plot2, plot3, plot4, plot5, top="Posterior distributions (med
 We can extract the $R^2$ from the posterior distribution and plot:
 
 ```{r Heart rstanarm glm - r2}
-r2_posterior <- bayes_R2(model_bayes_glm)
+r2_posterior <- bayes_R2(model_bayes_glm_heart)
 summary(r2_posterior)
 hist(r2_posterior) #expect normal
 ```
@@ -453,8 +453,8 @@ Posterior predictive checks can be extracted using "pp_check"
 Here the outcome is binary so the density overlay outcomes are concentrated at one or zero.
 
 ```{r Heart rstanarm glm - prediction}
-pp_check(model_bayes_glm, "stat")
-pp_check(model_bayes_glm, "dens_overlay")
+pp_check(model_bayes_glm_heart, "stat")
+pp_check(model_bayes_glm_heart, "dens_overlay")
 ```
 
 Further considerations: The [loo package](https://mc-stan.org/users/interfaces/loo) provides "efficient approximate leave-one-out cross-validation (LOO), approximate standard errors for estimated predictive errors (including comparisons), and the widely applicable information criterion (WAIC).The loo package can be used to estimate predictive error of any MCMC item-level log likelihood output".
@@ -539,55 +539,55 @@ df_usage_test <- df_usage[-sample_rows,]
 Fit a simple GLM using all variables:
 
 ```{r Usage glm}
-full_model_glm <- glm(Usage~.,data=df_usage_train[-1], gaussian(link="log"))
-summary(full_model_glm)
+full_model_glm_usage <- glm(Usage~.,data=df_usage_train[-1], gaussian(link="log"))
+summary(full_model_glm_usage)
 ```
 
 Use stepwise regression to reduce the explanatory variables:
 
 ```{r Usage stepwise regression, results='hide', message=FALSE}
 # specify a null model with no predictors
-null_model_glm <- glm(Usage ~ 1, data = df_usage_train, gaussian(link="log"))
+null_model_glm_usage <- glm(Usage ~ 1, data = df_usage_train, gaussian(link="log"))
 # use a forward stepwise algorithm to build a parsimonious model
-step_model_glm <- step(null_model_glm, scope = list(lower = null_model_glm, upper = full_model_glm), direction = "forward")
+step_model_glm_usage <- step(null_model_glm_usage, scope = list(lower = null_model_glm_usage, upper = full_model_glm_usage), direction = "forward")
 ```
 
 Summary of the model:
 
 ```{r Usage stepwise regression - summary}
-summary(step_model_glm)
+summary(step_model_glm_usage)
 ```
 
 For simplicity, we'll assume a model defined by MaxTemp and MinTemp only, noting the significant correlation with other explanatory variables.
 
 ```{r Usage final regression - gamma}
-gamma_model_glm <- glm(Usage ~ MaxTemp + MinTemp, family = Gamma(link="inverse"), data = df_usage_train)
-summary(final_model_glm)
+gamma_model_glm_usage <- glm(Usage ~ MaxTemp + MinTemp, family = Gamma(link="inverse"), data = df_usage_train)
+summary(gamma_model_glm_usage)
 ```
 
 Changing the family to gaussian with log link (later graph shows little change in predictions, although AIC is higher). Select gaussian for ease of comparison with the Bayes model.
 
 ```{r Usage final regression - gaussian}
-final_model_glm <- glm(Usage ~ MaxTemp + MinTemp, family = gaussian(link="log"), data = df_usage_train)
-summary(final_model_glm)
+final_model_glm_usage <- glm(Usage ~ MaxTemp + MinTemp, family = gaussian(link="log"), data = df_usage_train)
+summary(final_model_glm_usage)
 ```
 
 Extract coefficients:
 
 ```{r Usage final regression - coeff}
-final_model_glm_coeff <- as.data.frame(coef(final_model_glm))
-final_model_glm_coeff
+final_model_glm_usage_coeff <- as.data.frame(coef(final_model_glm_usage))
+final_model_glm_usage_coeff
 ```
 
 Project the result for a dummy record showing the link:
 
 ```{r Usage final regression - sample proj}
 print("Dummy prediction with min of 10 and max of 20:")
-predict(final_model_glm, newdata= as.data.frame(cbind(MaxTemp=20,MinTemp=10)), # model and data
+predict(final_model_glm_usage, newdata= as.data.frame(cbind(MaxTemp=20,MinTemp=10)), # model and data
   type="response", # or terms for coefficients
   se.fit = FALSE)
 # replicate
-exp(final_model_glm_coeff[1,] + final_model_glm_coeff[2,]*20+final_model_glm_coeff[3,]*10)
+exp(final_model_glm_usage_coeff[1,] + final_model_glm_usage_coeff[2,]*20+final_model_glm_usage_coeff[3,]*10)
 
 ```
 
@@ -596,7 +596,7 @@ Adding the predictions to the test data:
 ```{r Usage GLM predictions}
 # predictions, normal
 pred_usage <- as.data.frame(
-  predict(final_model_glm, newdata= df_usage_test, # model and data
+  predict(final_model_glm_usage, newdata= df_usage_test, # model and data
   type="response", # or terms for coefficients
   se.fit = TRUE, # default is false
   interval = "confidence", #default "none", also "prediction"
@@ -606,7 +606,7 @@ pred_usage <- as.data.frame(
 
 # predictions, gamma
 usage_pred_gamma <- 
-  predict(gamma_model_glm, newdata= df_usage_test, # model and data
+  predict(gamma_model_glm_usage, newdata= df_usage_test, # model and data
   type="response", # or terms for coefficients
   se.fit = FALSE, # default is false
   )
@@ -642,8 +642,8 @@ Plots show slightly higher residuals at higher predicted values for the step reg
 
 ```{r Usage GLM evaluation - traditional plots linear reg}
 par(mfrow = c(2, 2))
-plot(final_model_glm)
-plot(step_model_glm)
+plot(final_model_glm_usage)
+plot(step_model_glm_usage)
 ```
 
 Define a regression model in RJAGS. The structure here is more flexible than stan_glm which is predefined. This allows for a wider selection of prior distributions and a mixture of modeling choices. Also possible to specify model forms in this way for STAN.
@@ -707,13 +707,13 @@ plot(usage_posterior,density=FALSE)
 
 We can plot the posterior distributions for the model parameters from the samples:
 
-```{r Usage rstanarm glm - plot posteriors}
-posterior <- as.matrix(usage_posterior)
+```{r Usage jags glm - plot posteriors}
+posterior_usage <- as.matrix(usage_posterior)
 
-plot1<- mcmc_areas(posterior, pars = c("a"), prob = 0.80)
-plot2<- mcmc_areas(posterior, pars = c("b"), prob = 0.80)
-plot3<- mcmc_areas(posterior, pars = c("c"), prob = 0.80)
-plot4<- mcmc_areas(posterior, pars = c("s"), prob = 0.80)
+plot1<- mcmc_areas(posterior_usage, pars = c("a"), prob = 0.80)
+plot2<- mcmc_areas(posterior_usage, pars = c("b"), prob = 0.80)
+plot3<- mcmc_areas(posterior_usage, pars = c("c"), prob = 0.80)
+plot4<- mcmc_areas(posterior_usage, pars = c("s"), prob = 0.80)
 
 grid.arrange(plot1,plot2, plot3, plot4, top="Posterior distributions (median + 80% intervals)")
 ```

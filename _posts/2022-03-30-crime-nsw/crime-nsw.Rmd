@@ -1,0 +1,40 @@
+---
+title: "Indigenous over-representation in the prisons of NSW"
+description: |
+  A dashboard showing the over-representation of Aboriginal and Torres Straight Islander people in the prisons of New South Wales, Australia. Includes recipes for waffle and Coxcomb variations on the conventional pie chart.
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - visualisations
+theme: main.css 
+preview: img/prev_crime.png
+date: 2022-03-30
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+    code_folding: true
+link-citations: no
+---
+
+# Background 
+BOCSAR produces a quarterly report series examining trends in the number of adults and juveniles in prison in NSW. This includes a split between indigenous and non-indigenous people. Supplementing this with census data as well as information from other Government reports (links in the Tableau workbook) produces a stark image of over-representation of indigenous people in Australia.
+
+Tableau public is a free to use visualisation tool that can ingest data in a number of different formats and is useful at creating flexible visualisations. 
+
+See link above to GitHub repository which has data and tableau workbook for this recipe.
+
+# Introducing waffle and Coxcomb charts
+Both of these charts are variations of the maligned [pie chart](https://en.wikipedia.org/wiki/Pie_chart). Waffle charts show smaller percentages more easily than a pie chart. Workings are included in the GitHub repository; [this](https://www.youtube.com/watch?v=kR9f691FczI) is a useful instructional video on the topic of waffle charts.
+
+A Coxcomb chart was famously used by [Florence Nightingale](https://www.florence-nightingale.co.uk/coxcomb-diagram-1858/) to show causes of mortality over a period of time in the Crimean war, highlighting the number of deaths caused by preventable infection. The chart shows equally spaced segments (here categories of offenses) with the area of the segments varying by some measure (here the number of offenders) and divided by some subcategories (here proportion of indigenous offenders)
+
+
+# The result
+A preview of the final visualisation is below (click through to Tableau):
+
+[![](img\prev_crime.png){width=100%}](https://public.tableau.com/app/profile/pat5787/viz/IndigenousImprisonment-AustraliaNSW/IndigenousOverrepresentation)

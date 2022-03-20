@@ -3,6 +3,7 @@ title: "Modelling and visualisation"
 site: distill::distill_website
 listing: 
   posts:
+    - 2022-03-30-crime-nsw
     - 2022-02-01-trees
     - 2022-01-25-bayesian-applications
     - 20211130 actuaries_cookbook
