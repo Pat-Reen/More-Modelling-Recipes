@@ -318,7 +318,7 @@ Pros:
 
 * Fast predicting process, allowing multi-thread computation.
 * Works well on dense data.
-* Good interpretability and Robustness, can automatically find higher order relationships between the features.
+* Good interpretability and robustness, can automatically find higher order relationships between the features.
 
 Cons:
 
