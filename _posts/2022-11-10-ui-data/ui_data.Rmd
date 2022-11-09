@@ -9,7 +9,7 @@ author:
 categories:
   - dataanalytics
   - interface
-  - topic-modelling
+  - transformations
 theme: main.css 
 preview: img/prev_ui.png
 date: 2022-11-10
@@ -53,7 +53,7 @@ There are a few existing packages that deal with most of the standard transforma
 
 The first two options are considered in a demo, available on github:
 
-[![](img/pandas_ui.gif){width=100%}]()
+[![](img/prev_pandas_ui.png){width=100%}](https://github.com/Pat-Reen/More-Modelling-Recipes/tree/main/_posts/2022-11-10-ui-data)
 Source: https://medium.com/@arunnbaba/pandas-ui-87316a4e19c7
 
 
