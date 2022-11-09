@@ -54,8 +54,6 @@ There are a few existing packages that deal with most of the standard transforma
 The first two options are considered in a demo, available on github:
 
 [![](img/prev_pandas_ui.png){width=100%}](https://github.com/Pat-Reen/More-Modelling-Recipes/blob/main/_posts/2022-11-10-ui-data/ui_data_py.ipynb)
-Source: https://medium.com/@arunnbaba/pandas-ui-87316a4e19c7
-
 
 
 
