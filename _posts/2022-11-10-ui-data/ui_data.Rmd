@@ -34,7 +34,7 @@ The solutions considered here are bolt-on options for existing R or Python proce
 
 ## Shiny and R
 
-Two very useful packages allow direct visual editing and transformation of r tables through shiny:
+Two very useful packages allow direct visual editing and transformation of r tables through shiny below. These methods are extendable to passing through edits to SQL tables
 
 * [Datamods](https://cran.r-project.org/web/packages/datamods/datamods.pdf) is a package of shiny modules to import and manipulate data.
 * [rhandsontable](https://cran.r-project.org/web/packages/rhandsontable/vignettes/intro_rhandsontable.html) is an htmlwidget with an Excel-like appearance. It comes with powerful features like data validation, sorting, grouping, data binding, formula support or column ordering.
@@ -53,7 +53,7 @@ There are a few existing packages that deal with most of the standard transforma
 
 The first two options are considered in a demo, available on github:
 
-[![](img/prev_pandas_ui.png){width=100%}](https://github.com/Pat-Reen/More-Modelling-Recipes/tree/main/_posts/2022-11-10-ui-data)
+[![](img/prev_pandas_ui.png){width=100%}](https://github.com/Pat-Reen/More-Modelling-Recipes/blob/main/_posts/2022-11-10-ui-data/ui_data_py.ipynb)
 Source: https://medium.com/@arunnbaba/pandas-ui-87316a4e19c7
 
 
