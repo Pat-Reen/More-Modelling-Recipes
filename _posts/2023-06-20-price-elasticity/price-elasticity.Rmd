@@ -1,0 +1,391 @@
+---
+title: "Exploring price elasticity"
+description: |
+  Price elasticity is the responsiveness of sales to changes in price. Initial exploration looking at demand/ recommendation modelling given price and other variables. Extendable to elasticity questions to help drive pricing strategies.
+
+author:
+  - name: Pat Reen 
+    url: https://www.linkedin.com/in/patrick-reen/
+categories:
+  - dataanalytics
+  - insurance
+  - pricing
+  - statistics
+  - price elasticity
+theme: main.css 
+preview: img/prev_topic.png
+date: 2023-06-20
+draft: false
+output:
+  distill::distill_article: 
+    toc: true
+    toc_float: true
+    self_contained: true
+link-citations: no
+---
+
+# Background and application
+
+*...How might we predict changes in product sales patterns based upon price? Impact on advisor recommendations?...*
+
+Price elasticity is the responsiveness of sales to changes in price and price elasticity modelling helps drive pricing strategies.
+
+Factors such as age and occupation are likely to impact price elasticity. Insurer specific factors or external factors influencing advisers might be present but hidden/ not explicit in the data. There might be a lag in the effect of price changes on recommendations. 
+
+Price elasticity of sales shares similarities with lapse rate modelling, but there the lag effect/ inertia effect might be more stark. 
+
+Initial exploration looking at demand/ recommendations modelling given price and other variables. Extendable to elasticity questions.
+
+## Further reading
+A few articles of interest:
+
+* [Predicting Price Elasticity of Demand with Python](https://towardsdatascience.com/predicting-price-elasticity-of-demand-with-python-implementing-stp-framework-part-5-5-8383ecc4ae68) discusses implementing logistic regression to predict price elasticity of demand.
+* [Model behaviour: Unlocking the potential of price elasticity in general insurance](https://www.theactuary.com/2022/11/03/model-behaviour-unlocking-potential-price-elasticity-general-insurance) provides context and a mathematical support.
+
+## Libraries
+Setting up the environment as well as a list of some of the packages used in the recipe. 
+
+```{r wrap-hook, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = xfun::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+```{r Setup environment, message=FALSE, warning=FALSE, results='hide'}
+
+# calling python from r
+library(reticulate) 
+
+# create environment if does not exist
+# conda_create("r-reticulate") 
+# py_config() # to check configuration
+
+# activate environment
+use_condaenv("r-reticulate", required=TRUE) # set environment before running any Python chunks
+
+# if not already installed, install the below. if env specified, can drop envname parameter
+
+# py_install("pandas",envname = "r-reticulate")
+# py_install("numpy",envname = "r-reticulate")
+# py_install("scipy",envname = "r-reticulate")
+# py_install("matplotlib",envname = "r-reticulate")
+# py_install("seaborn",envname = "r-reticulate")
+# py_install("scikit-learn",envname = "r-reticulate")
+#py_install("linearmodels",envname = "r-reticulate")
+
+# ...etc
+
+```
+
+Libraries:
+
+```{python Libraries, message=TRUE, warning=TRUE, results='hide'}
+
+# import some standard libraries
+import pandas as pd
+import numpy as np
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+import seaborn as sns
+import sklearn
+import statsmodels.api as sm
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+from linearmodels.panel import PanelOLS
+
+```
+
+# Data
+## Hypothetical data - generate
+
+Creating data split into 3 age groups, 3 occupations and 3 products/ insurers. Defining some initial price and assumping the initial recommendations are split roughly equally across products (in spite of initial price differences - implying a hidden preference not captured in the data which will perhaps be a feature of the model by product). A series of price changes are defined as well as their impact on the level of recomendations. Recommendations are assumed to peak around the middle of the year and a random noise term is thrown in.
+
+### Function to apply elasticity
+```{python Elasticity function, message=FALSE, warning=FALSE, code_folding=TRUE}
+def adjust_recommendations(row):
+    # get the age and occupation specific elasticities
+    age_elasticity = price_elasticities[row['age_group']]
+    occupation_elasticity = occupation_elasticities[row['occupation']]
+    
+    # calculate the combined elasticity
+    combined_elasticity = age_elasticity * occupation_elasticity
+    
+    # calculate the percentage change in price
+    price_change = (row['price'] - row['base_price']) / row['base_price']
+    
+    # adjust the recommendations based on the price change and elasticity
+    adjusted_recommendations = row['recommendations'] * (1 - price_change * combined_elasticity)
+    
+    return adjusted_recommendations
+```
+
+### Data generation
+```{python Data, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Define date range
+date_range = pd.date_range(start='2019-01-01', end='2022-12-31', freq='M', normalize=True)
+
+# Define age groups, occupations and products
+age_groups = ['20-35', '36-45', '46+']
+occupations = ['LIGHT BLUE', 'HEAVY BLUE', 'WHITE COLLAR']
+products = ['Product1', 'Product2', 'Product3']
+
+# Define baseline price for each product
+price = {'Product1': 100, 'Product2': 105, 'Product3': 120}
+
+# Create initial dataframe
+data = []
+for product in products:
+    for age_group in age_groups:
+        for occupation in occupations:
+            for date in date_range:
+                row = {
+                    'product': product,
+                    'date': date.to_period('M'),
+                    'age_group': age_group,
+                    'occupation': occupation,
+                    'base_price': price[product],
+                    'price': price[product],
+                }
+                data.append(row)
+
+df = pd.DataFrame(data)
+
+# Apply price changes
+price_changes = [
+    # (product, age_group, occupation, date, price multiplier)
+    ('Product1', '46+', None, pd.to_datetime('2019-07-01'), 1.15),
+    ('Product3', None, 'LIGHT BLUE', pd.to_datetime('2020-03-01'), 0.9),
+    ('Product2', '46+', 'WHITE COLLAR', pd.to_datetime('2020-12-01'), 1.3),
+    ('Product2', '20-35', None, pd.to_datetime('2021-04-01'), 0.8),
+    ('Product1', None, 'HEAVY BLUE', pd.to_datetime('2021-12-01'), 1.05),
+]
+
+for product, age_group, occupation, date, multiplier in price_changes:
+    date = date.to_period('M')
+    mask = (df['product'] == product) & (df['date'] >= date)
+    if age_group is not None:
+        mask = mask & (df['age_group'] == age_group)
+    if occupation is not None:
+        mask = mask & (df['occupation'] == occupation)
+    df.loc[mask, 'price'] *= multiplier
+    
+np.random.seed(0)  # for reproducibility
+mu, sigma = 6, 4  # mean and standard deviation for the normal distribution
+s = np.random.normal(mu, sigma, df.shape[0])  # generate random numbers from the distribution
+
+# Generate recommendations
+df['month'] = df['date'].dt.month
+df['month_norm'] = norm.pdf(df['month'], mu, sigma)  # generate the monthly pattern
+
+# Baseline recommendations, scaled by the monthly pattern and with some ABSOLUTE Gaussian noise
+# Ensure that each product, age, occ gets roughly equal recommendations initially
+df['recommendations'] = 100 * df['month_norm'] + np.absolute(np.random.normal(0, 15, df.shape[0]))
+
+# Apply price changes and adjust recommendations based on price elasticity
+price_elasticities = {'20-35': 1.5, '36-45': 1.2, '46+': 1.1}
+occupation_elasticities = {'LIGHT BLUE': 1.2, 'HEAVY BLUE': 1.05, 'WHITE COLLAR': 1.05}
+df['recommendations'] = df.apply(adjust_recommendations, axis=1)
+# Round the recommendations to nearest integer as we're dealing with counts
+df['recommendations'] = df['recommendations'].round().astype(int)
+
+# Clean up
+df.drop(columns=['month', 'month_norm'], inplace=True)
+
+df.head()
+
+```
+
+
+## Exploratory plots
+
+Plots show the seasonality. Vertical lines reflect the timing of the rate changes. You can see changes to the recommendation patterns beyond the rate change points.
+
+```{python Exploratory graphs 1, message=FALSE, warning=FALSE, code_folding=TRUE}
+# Dictionary
+price_change_dates = ['2019-07-01', '2020-03-01', '2020-12-01', '2021-04-01', '2021-12-01']
+
+# Pivot and group to sum recommendations
+pivot_df_occupation = df.groupby(['date', 'occupation', 'product']).sum()['recommendations'].reset_index()
+pivot_df_occupation = pivot_df_occupation.pivot_table(index='date', columns=['occupation', 'product'], values='recommendations', fill_value=0).reset_index()
+pivot_df_occupation['date'] = pivot_df_occupation['date'].dt.to_timestamp()
+
+# Long format
+melted_df_occupation = pd.melt(pivot_df_occupation, id_vars='date', var_name=['occupation', 'product'], value_name='recommendations')
+
+# Create line plot by Occupation
+g_occupation = sns.FacetGrid(melted_df_occupation, row="occupation", hue="product", height=4, aspect=3)
+g_occupation = g_occupation.map(sns.lineplot, "date", "recommendations")
+g_occupation = g_occupation.add_legend()
+# Add price change date markers
+for date in price_change_dates:
+  g_occupation = g_occupation.map(plt.axvline, x=pd.to_datetime(date), color='red', linestyle='--')
+
+g_occupation.fig
+```
+
+```{python Exploratory graphs 2, message=FALSE, warning=FALSE, code_folding=TRUE}
+# Pivot and group to sum recommendations
+pivot_df_age = df.groupby(['date', 'age_group', 'product']).sum()['recommendations'].reset_index()
+pivot_df_age = pivot_df_age.pivot_table(index='date', columns=['age_group', 'product'], values='recommendations', fill_value=0).reset_index()
+pivot_df_age['date'] = pivot_df_age['date'].dt.to_timestamp()
+
+# Long format
+melted_df_age = pd.melt(pivot_df_age, id_vars='date', var_name=['age_group', 'product'], value_name='recommendations')
+
+# Create line plot by Age Group
+g_age = sns.FacetGrid(melted_df_age, row="age_group", hue="product", height=4, aspect=3)
+g_age = g_age.map(sns.lineplot, "date", "recommendations")
+g_age = g_age.add_legend()
+# Add price change date markers
+for date in price_change_dates:
+  g_age = g_age.map(plt.axvline, x=pd.to_datetime(date), color='red', linestyle='--')
+
+g_age.fig
+```
+
+
+# Models
+
+## Model variations
+
+Initially we are modelling recommendations as explained by price and other explanatory variables. Models considered were a Gradient Boosting Regressor, Generalized Linear Model (GLM), and Fixed Effects (FE) Panel Model:
+
+* Generalized Linear Model (GLM): This model is a statistical regression model that extends linear regression to handle different types of response variables and apply different types of probability distributions. It models the relationship between the response variable (recommendations) and the predictors (exogenous variables) by specifying a suitable probability distribution and a link function. In this case, it is used to model the recommendations using the Negative Binomial distribution.
+* Gradient Boosting Regressor: This model is a machine learning algorithm that uses an ensemble of weak prediction models (decision trees) to make predictions. It iteratively builds and combines these weak models to create a stronger predictive model. In this case, it is used to predict the recommendations based on the exogenous variables.
+* Fixed Effects (FE) Panel Model: This model is used to analyze panel data, where observations are collected over time for multiple entities (products in this case). The FE model accounts for unobserved entity-specific effects (fixed effects) by including dummy variables for each entity. It estimates the relationship between the endogenous variable (recommendations) and the exogenous variables (age_group, occupation, and price), while controlling for the entity-specific effects.
+
+### GLM
+
+```{python GLM price, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Preprocessing
+encoder = LabelEncoder()
+df_encoded = df.copy()
+df_encoded['date'] = df_encoded['date'].dt.to_timestamp()
+df_encoded['product'] = encoder.fit_transform(df_encoded['product'])
+df_encoded['age_group'] = encoder.fit_transform(df_encoded['age_group'])
+df_encoded['occupation'] = encoder.fit_transform(df_encoded['occupation'])
+
+# Define predictors and target
+X = df_encoded[['product', 'age_group', 'occupation', 'price']]
+y = df_encoded['recommendations']
+
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Add constant to predictors - statsmodels requires this for correct model specification
+X_train = sm.add_constant(X_train)
+X_test = sm.add_constant(X_test)
+
+# Create Negative Binomial model
+glm_model = sm.GLM(y_train, X_train, family=sm.families.NegativeBinomial(link=sm.families.links.log()))
+
+# Train model
+glm_results = glm_model.fit()
+
+# Use the model to make predictions
+glm_predictions = glm_results.predict(X_test)
+
+# Calculate evaluation metrics
+glm_mse = mean_squared_error(y_test, glm_predictions)
+glm_r2 = r2_score(y_test, glm_predictions)
+
+# Print evaluation metrics
+print(f"GLM MSE: {glm_mse:.4f}")
+print(f"GLM R-squared: {glm_r2:.4f}")
+
+# Summary
+glm_results.summary()
+
+```
+
+### GB
+
+```{python GB price, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Create Gradient Boosting model
+gb_model = GradientBoostingRegressor(random_state=42)
+
+# Train model
+gb_model.fit(X_train, y_train)
+
+# Use the model to make predictions
+gb_predictions = gb_model.predict(X_test)
+
+# Calculate metrics
+gb_mse = mean_squared_error(y_test, gb_predictions)
+gb_r2 = r2_score(y_test, gb_predictions)
+
+print(f'Gradient Boosting MSE: {gb_mse:.4f}')
+print(f'Gradient Boosting R^2: {gb_r2:.4f}')
+
+# Get feature importances
+importance = gb_model.feature_importances_
+
+# Create a DataFrame to display the feature importances
+feature_importance_df = pd.DataFrame({'Feature': X_train.columns, 'Importance': importance})
+
+# Sort the DataFrame by importance in descending order
+feature_importance_df = feature_importance_df.sort_values('Importance', ascending=False)
+
+# Display the top features
+print(feature_importance_df.head())
+
+```
+
+### FE
+
+```{python FE price, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Convert to panel data
+panel_data = df_encoded.set_index(['product', 'date'])
+
+# Define exogenous variables
+exog = panel_data[['age_group', 'occupation', 'price']]
+exog = sm.add_constant(exog, has_constant='add')  # Add constant by product
+
+# Define endogenous variable
+endog = panel_data['recommendations']
+
+# Create a model with fixed effects
+fe_model = PanelOLS(endog, exog, entity_effects=True, drop_absorbed=True)
+
+# Fit the model
+fe_results = fe_model.fit()
+
+# Use the model to make predictions
+fe_predictions = fe_results.predict(exog)
+
+# Calculate evaluation metrics
+fe_mse = mean_squared_error(endog, fe_predictions)
+fe_r2 = r2_score(endog, fe_predictions)
+
+# Print evaluation metrics
+print(f"FE Model MSE: {fe_mse:.4f}")
+print(f"FE Model R-squared: {fe_r2:.4f}")
+
+# Print model summary
+print(fe_results)
+
+```
+
+# Next steps
+
+* Translate the above into price elasticities for each product, age group, and occupation combination. Plot them against the actual elasticities to assess the model's performance.
+* Goodness of fit testing on same - do the models adequately captures the variations and patterns in the data. Compare the performance across the models.
+* Conduct a sensitivity analysis to assess the robustness of the price elasticity model. 
+* Explore additional features that could potentially improve the model's performance. For example, consider incorporating demographic or socio-economic factors.
+
+
