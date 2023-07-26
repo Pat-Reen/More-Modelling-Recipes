@@ -80,7 +80,10 @@ use_condaenv("r-reticulate", required=TRUE) # set environment before running any
 # py_install("matplotlib",envname = "r-reticulate")
 # py_install("seaborn",envname = "r-reticulate")
 # py_install("scikit-learn",envname = "r-reticulate")
-#py_install("linearmodels",envname = "r-reticulate")
+# py_install("linearmodels",envname = "r-reticulate")
+# py_install("tabulate",envname = "r-reticulate")
+# py_install("rpy2",envname = "r-reticulate")
+ 
 
 # ...etc
 
@@ -88,11 +91,23 @@ use_condaenv("r-reticulate", required=TRUE) # set environment before running any
 
 Libraries:
 
-```{python Libraries, message=TRUE, warning=TRUE, results='hide'}
+```{r Libraries - r, message=FALSE, warning=FALSE, results='hide'}
+
+# r libraries
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(scales)
+library(lubridate)
+
+```
+
+```{python Libraries - py, message=TRUE, warning=TRUE, results='hide'}
 
 # import some standard libraries
 import pandas as pd
 import numpy as np
+from tabulate import tabulate
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -114,8 +129,9 @@ Creating data split into 3 age groups, 3 occupations and 3 products/ insurers. D
 ### Function to apply elasticity
 ```{python Elasticity function, message=FALSE, warning=FALSE, code_folding=TRUE}
 def adjust_recommendations(row):
-    # get the age and occupation specific elasticities
-    age_elasticity = price_elasticities[row['age_group']]
+    # get the product, age and occupation specific elasticities
+    product_elasticity = product_elasticities[row['product']]
+    age_elasticity = age_elasticities[row['age_group']]
     occupation_elasticity = occupation_elasticities[row['occupation']]
     
     # calculate the combined elasticity
@@ -131,10 +147,11 @@ def adjust_recommendations(row):
 ```
 
 ### Data generation
-```{python Data, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+```{python Data, message=TRUE, warning=TRUE, code_folding=TRUE}
 
 # Define date range
-date_range = pd.date_range(start='2019-01-01', end='2022-12-31', freq='M', normalize=True)
+date_range = pd.date_range(start='2019-01-01', end='2024-06-30', freq='M', normalize=True)
 
 # Define age groups, occupations and products
 age_groups = ['20-35', '36-45', '46+']
@@ -142,119 +159,318 @@ occupations = ['LIGHT BLUE', 'HEAVY BLUE', 'WHITE COLLAR']
 products = ['Product1', 'Product2', 'Product3']
 
 # Define baseline price for each product
-price = {'Product1': 100, 'Product2': 105, 'Product3': 120}
+price = {'Product1': 100.00, 'Product2': 100.00, 'Product3': 100.00}
 
 # Create initial dataframe
 data = []
-for product in products:
-    for age_group in age_groups:
-        for occupation in occupations:
-            for date in date_range:
+for date in date_range:
+    for product in products:
+        for age_group in age_groups:
+            for occupation in occupations:
                 row = {
                     'product': product,
-                    'date': date.to_period('M'),
+                    'date': date.date(),
                     'age_group': age_group,
                     'occupation': occupation,
                     'base_price': price[product],
                     'price': price[product],
+                    'price_changed': 0,
+                    'change_direction': 'no change' 
                 }
                 data.append(row)
+
 
 df = pd.DataFrame(data)
 
 # Apply price changes
 price_changes = [
     # (product, age_group, occupation, date, price multiplier)
-    ('Product1', '46+', None, pd.to_datetime('2019-07-01'), 1.15),
-    ('Product3', None, 'LIGHT BLUE', pd.to_datetime('2020-03-01'), 0.9),
-    ('Product2', '46+', 'WHITE COLLAR', pd.to_datetime('2020-12-01'), 1.3),
-    ('Product2', '20-35', None, pd.to_datetime('2021-04-01'), 0.8),
-    ('Product1', None, 'HEAVY BLUE', pd.to_datetime('2021-12-01'), 1.05),
+    ('Product1', '46+', None, pd.to_datetime('2019-07-01').date(), 1.15),
+    ('Product3', None, 'HEAVY BLUE', pd.to_datetime('2019-09-01').date(), 1.05),
+    ('Product2', '36-45', 'LIGHT BLUE', pd.to_datetime('2020-05-01').date(), 1.1),
+    ('Product2', '46+', 'LIGHT BLUE', pd.to_datetime('2020-05-01').date(), 1.1),
+    ('Product3', None, 'LIGHT BLUE', pd.to_datetime('2020-03-01').date(), 0.9),
+    ('Product2', '46+', 'WHITE COLLAR', pd.to_datetime('2020-12-01').date(), 1.3),
+    ('Product2', '20-35', None, pd.to_datetime('2021-04-01').date(), 0.8),
+    ('Product1', None, 'HEAVY BLUE', pd.to_datetime('2021-12-01').date(), 1.05),
+    ('Product1', '20-35', 'WHITE COLLAR', pd.to_datetime('2022-03-01').date(), 1.2),
+    ('Product3', '46+', 'HEAVY BLUE', pd.to_datetime('2022-06-01').date(), 0.85),
+    ('Product2', '36-45', 'LIGHT BLUE', pd.to_datetime('2022-09-01').date(), 1.1),
+    ('Product1', '36-45', 'LIGHT BLUE', pd.to_datetime('2023-01-01').date(), 1.05),
+    ('Product2', '20-35', 'HEAVY BLUE', pd.to_datetime('2023-04-01').date(), 1.3),
+    ('Product3', '46+', 'WHITE COLLAR', pd.to_datetime('2023-07-01').date(), 0.9),
+    ('Product1', '20-35', None, pd.to_datetime('2023-10-01').date(), 1.1),
+    ('Product2', None, 'HEAVY BLUE', pd.to_datetime('2024-01-01').date(), 0.95),
+    ('Product3', '36-45', 'WHITE COLLAR', pd.to_datetime('2024-04-01').date(), 1.15),
 ]
 
+# Apply price changes
 for product, age_group, occupation, date, multiplier in price_changes:
-    date = date.to_period('M')
+    
     mask = (df['product'] == product) & (df['date'] >= date)
     if age_group is not None:
         mask = mask & (df['age_group'] == age_group)
     if occupation is not None:
         mask = mask & (df['occupation'] == occupation)
-    df.loc[mask, 'price'] *= multiplier
     
-np.random.seed(0)  # for reproducibility
-mu, sigma = 6, 4  # mean and standard deviation for the normal distribution
-s = np.random.normal(mu, sigma, df.shape[0])  # generate random numbers from the distribution
+    df.loc[mask, 'price'] *= multiplier
 
-# Generate recommendations
-df['month'] = df['date'].dt.month
-df['month_norm'] = norm.pdf(df['month'], mu, sigma)  # generate the monthly pattern
-
-# Baseline recommendations, scaled by the monthly pattern and with some ABSOLUTE Gaussian noise
+# Flag price change
+for product, age_group, occupation, date, multiplier in price_changes:
+    
+    mask = (df['product'] == product) & (df['date'].apply(lambda x: x.year)== date.year) & (df['date'].apply(lambda x: x.month) == date.month)
+    if age_group is not None:
+        mask = mask & (df['age_group'] == age_group)
+    if occupation is not None:
+        mask = mask & (df['occupation'] == occupation)
+        
+    df.loc[mask, 'price_changed'] = 1 
+    df.loc[mask, 'change_direction'] = 'up' if multiplier > 1 else 'down'
+    
 # Ensure that each product, age, occ gets roughly equal recommendations initially
-df['recommendations'] = 100 * df['month_norm'] + np.absolute(np.random.normal(0, 15, df.shape[0]))
+df['recommendations'] = 100 
+    
+# Noise terms
+# Monthly
+np.random.seed(0)  # for reproducibility
+mu, sigma = 10, 5  # mean and standard deviation for the normal distribution
+s = np.random.normal(mu, sigma, df.shape[0])  # generate random numbers from the distribution
+df['month'] = df['date'].apply(lambda x: x.month)
+df['month_norm'] = 1 + norm.pdf(df['month'], mu, sigma)  # generate the monthly pattern
+df['recommendations'] = df['recommendations'] *df['month_norm']
+
+# Random 
+noise_factor = 1 + (np.random.normal(0, 0.02, df.shape[0])) 
+df['recommendations'] *= noise_factor
 
 # Apply price changes and adjust recommendations based on price elasticity
-price_elasticities = {'20-35': 1.5, '36-45': 1.2, '46+': 1.1}
+product_elasticities = {'Product1': 1.1, 'Product2': 1.1, 'Product3': 1}
+age_elasticities = {'20-35': 1.5, '36-45': 1.2, '46+': 1.1}
 occupation_elasticities = {'LIGHT BLUE': 1.2, 'HEAVY BLUE': 1.05, 'WHITE COLLAR': 1.05}
+
 df['recommendations'] = df.apply(adjust_recommendations, axis=1)
 # Round the recommendations to nearest integer as we're dealing with counts
 df['recommendations'] = df['recommendations'].round().astype(int)
 
-# Clean up
-df.drop(columns=['month', 'month_norm'], inplace=True)
+# We know that the data has seasonality, normalising this for later visuals:
+
+# Calculate monthly averages
+monthly_averages = df.groupby('month')['recommendations'].mean().reset_index()
+monthly_averages.columns = ['month', 'avg_recommendations']
+
+# Merge and norm
+df = df.merge(monthly_averages, on='month', how='left')
+df['normalized_recommendations'] = df['recommendations'] / df['avg_recommendations']
 
 df.head()
 
 ```
 
-
 ## Exploratory plots
 
-Plots show the seasonality. Vertical lines reflect the timing of the rate changes. You can see changes to the recommendation patterns beyond the rate change points.
+```{r Exploratory graphs 0, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
 
-```{python Exploratory graphs 1, message=FALSE, warning=FALSE, code_folding=TRUE}
-# Dictionary
-price_change_dates = ['2019-07-01', '2020-03-01', '2020-12-01', '2021-04-01', '2021-12-01']
+# Convert python df to r for plotting
+df <- py$df
 
-# Pivot and group to sum recommendations
-pivot_df_occupation = df.groupby(['date', 'occupation', 'product']).sum()['recommendations'].reset_index()
-pivot_df_occupation = pivot_df_occupation.pivot_table(index='date', columns=['occupation', 'product'], values='recommendations', fill_value=0).reset_index()
-pivot_df_occupation['date'] = pivot_df_occupation['date'].dt.to_timestamp()
+# Convert the date 
+df$date <- as.Date(sapply(df$date, as.character))
 
-# Long format
-melted_df_occupation = pd.melt(pivot_df_occupation, id_vars='date', var_name=['occupation', 'product'], value_name='recommendations')
+# Plot
+p <- ggplot(df, aes(x = date, y = price, color = product)) +
+  geom_line() +
+  facet_grid(age_group ~ occupation) +
+  scale_x_date(breaks = unique(df$date)[seq(1, length(unique(df$date)), by = 10)]) +
+  labs(title = "Price change history") +
+  theme_minimal() +
+  ylim(80, 150) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1))  # This line makes the x-axis labels diagonal
 
-# Create line plot by Occupation
-g_occupation = sns.FacetGrid(melted_df_occupation, row="occupation", hue="product", height=4, aspect=3)
-g_occupation = g_occupation.map(sns.lineplot, "date", "recommendations")
-g_occupation = g_occupation.add_legend()
-# Add price change date markers
-for date in price_change_dates:
-  g_occupation = g_occupation.map(plt.axvline, x=pd.to_datetime(date), color='red', linestyle='--')
-
-g_occupation.fig
+print(p)
 ```
 
-```{python Exploratory graphs 2, message=FALSE, warning=FALSE, code_folding=TRUE}
-# Pivot and group to sum recommendations
-pivot_df_age = df.groupby(['date', 'age_group', 'product']).sum()['recommendations'].reset_index()
-pivot_df_age = pivot_df_age.pivot_table(index='date', columns=['age_group', 'product'], values='recommendations', fill_value=0).reset_index()
-pivot_df_age['date'] = pivot_df_age['date'].dt.to_timestamp()
+Plots show the seasonality. Arrows reflect the timing and direction of the rate changes. There is a fair amount of noise in the recommendations:
 
-# Long format
-melted_df_age = pd.melt(pivot_df_age, id_vars='date', var_name=['age_group', 'product'], value_name='recommendations')
+```{r Exploratory graphs 1, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
 
-# Create line plot by Age Group
-g_age = sns.FacetGrid(melted_df_age, row="age_group", hue="product", height=4, aspect=3)
-g_age = g_age.map(sns.lineplot, "date", "recommendations")
-g_age = g_age.add_legend()
-# Add price change date markers
-for date in price_change_dates:
-  g_age = g_age.map(plt.axvline, x=pd.to_datetime(date), color='red', linestyle='--')
+p <- ggplot(df, aes(x = date, y = recommendations, color = product)) +
+  geom_line(size=0.5) +
+  
+  # Plot
+  geom_point(data = subset(df, price_changed == 1), aes(x = date, y = recommendations, color = product, fill=product, shape = change_direction), size = 3) +
+  scale_shape_manual(values = c(up = 24, down = 25)) +
+  facet_grid(age_group ~ occupation) +
+  scale_x_date(breaks = unique(df$date)[seq(1, length(unique(df$date)), by = 10)]) +
+  labs(title = "Recommendations history") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
-g_age.fig
+print(p)
+
+```
+From our input we know we have overlayed a seasonality factor:
+
+```{r Exploratory graphs 2, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
+
+# Calculate average month_norm across groups
+df_avg <- df %>%
+  group_by(date) %>%
+  summarize(avg_month_norm = mean(month_norm))
+
+head(df_avg)
+# Plot
+p <- ggplot(df_avg, aes(x = date, y = avg_month_norm)) +
+  geom_line() +
+  scale_y_continuous(labels = percent_format()) +
+  labs(title = "Monthly seasonality (data param)") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+print(p)
 ```
 
+Taking a 3 month moving average reduces the noise, and some correlation with the rate change visable:
+
+```{r Exploratory graphs 3, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
+
+# Calculate the 3-month moving average
+df <- df %>% 
+  group_by(age_group, occupation, product) %>%
+  arrange(date) %>%
+  mutate(moving_avg = zoo::rollmean(recommendations, k = 3, align = "right", fill = NA))
+
+p <- ggplot(df, aes(x = date, y = recommendations, color = product)) +
+  
+  # Adding a 3-month moving average line
+  geom_point(data = subset(df, price_changed == 1), aes(x = date, y = moving_avg, color = product, fill=product, shape = change_direction), size = 3) +
+  scale_shape_manual(values = c(up = 24, down = 25)) +
+  geom_line(aes(y = moving_avg), linetype = "solid", size = 0.5) +
+  facet_grid(age_group ~ occupation) +
+  scale_x_date(breaks = unique(df$date)[seq(1, length(unique(df$date)), by = 10)]) +
+  labs(title = "Recommendations history with 3-Month moving average") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p)
+```
+Removing the seasonality by standardising the monthly recommendations by their averages, retaining the 3 month moving average:
+
+```{r Exploratory graphs 4, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
+
+# Add moving average based upon normalised recommendations
+df <- df %>% 
+  group_by(age_group, occupation, product) %>%
+  arrange(date) %>%
+  mutate(moving_avg = zoo::rollmean(normalized_recommendations, k = 3, align = "right", fill = NA))
+
+# Plot the normalized data
+p <- ggplot(df, aes(x = date, y = moving_avg, color = product)) +
+  geom_point(data = subset(df, price_changed == 1), aes(x = date, y = moving_avg, color = product, fill=product, shape = change_direction), size = 3) +
+  scale_shape_manual(values = c(up = 24, down = 25)) +
+  geom_line() +
+  facet_grid(age_group ~ occupation) +
+  labs(title = "Normalized recommendations history") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+print(p)
+
+
+```
+From our inputs, the price elasticity factors are:
+
+```{python Elasticities inputs table, message=FALSE, warning=FALSE, code_folding=TRUE}
+# Convert the dictionaries to lists of tuples
+product_data = list(product_elasticities.items())
+age_data = list(age_elasticities.items())
+occupation_data = list(occupation_elasticities.items())
+
+# Print the tables
+print("Product Elasticities:")
+print(tabulate(product_data, headers=["Product", "Elasticity"], tablefmt="grid"))
+
+print("\nAge Elasticities:")
+print(tabulate(age_data, headers=["Age Group", "Elasticity"], tablefmt="grid"))
+
+print("\nOccupation Elasticities:")
+print(tabulate(occupation_data, headers=["Occupation", "Elasticity"], tablefmt="grid"))
+
+```
+Looking at the correlations between price and recommendations, we see a stronger negative correlation for Products 1 and 2 as expected. Looking at base recommendations and normalised for seasonality:
+
+```{python Correlation -  prod, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Subset the data 
+subset_df = df[['product', 'price', 'normalized_recommendations', 'recommendations']]
+
+# Group the data by
+correlations = subset_df.groupby('product').apply(lambda x: pd.Series({
+    'Corr Price v Norm Recomment': x['price'].corr(x['normalized_recommendations']),
+    'Corr Price v Recommend': x['price'].corr(x['recommendations'])
+}))
+
+# Round the correlations to 3 decimal points
+correlations = correlations.round(3)
+
+# Reset the index and rename the columns
+correlation_table = correlations.reset_index().rename(columns={'level_1': 'Correlation Type'})
+
+# Display the correlation table
+print(correlation_table)
+
+```
+
+Normalising for seasonability, we see a stronger negative correlation for younger ages (<36) but stronger than expected for older ages given the inputs:
+
+```{python Correlation - prod age, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Subset the data 
+subset_df = df[['product', 'age_group', 'price', 'normalized_recommendations']]
+
+# Group the data by 
+correlations = subset_df.groupby(['product', 'age_group']).apply(lambda x: x['price'].corr(x['normalized_recommendations'])).unstack()
+
+# Round the correlations to 3 decimal points
+correlations = correlations.round(3)
+
+# Display the correlation table
+print(correlations)
+
+```
+Data gets a bit more sparse when we add in all of product, age and occupation, but we do largely see a stronger negative correlation for light blue as expected:
+
+```{python Correlation - prod age occ, message=FALSE, warning=FALSE, code_folding=TRUE}
+
+# Subset the data for the desired columns
+subset_df = df[['product', 'occupation', 'age_group', 'price', 'normalized_recommendations']]
+
+# Create an empty dictionary to store the correlation tables
+correlation_tables = {}
+
+# Iterate over each product
+for product in subset_df['product'].unique():
+    product_df = subset_df[subset_df['product'] == product]
+    
+    # Group the data by 'occupation' and 'age_group' and calculate the correlations
+    correlations = product_df.groupby(['occupation', 'age_group']).apply(lambda x: x['price'].corr(x['normalized_recommendations'])).unstack()
+    
+    # Round the correlations to 3 decimal points
+    correlations = correlations.round(3)
+    
+    # Store the correlation table in the dictionary
+    correlation_tables[product] = correlations
+
+# Display the correlation tables
+for product, correlations in correlation_tables.items():
+    print(f"Correlation table for {product}")
+    print(correlations)
+    print()
+
+```
 
 # Models
 
@@ -268,29 +484,89 @@ Initially we are modelling recommendations as explained by price and other expla
 
 ### GLM
 
-```{python GLM price, message=FALSE, warning=FALSE, code_folding=TRUE}
+To start with, let's model the normalised recommendations. We see that month is not significant. Params can be directly interpreted as price sensitivities. No differential by age, occ and product.
 
-# Preprocessing
-encoder = LabelEncoder()
-df_encoded = df.copy()
-df_encoded['date'] = df_encoded['date'].dt.to_timestamp()
-df_encoded['product'] = encoder.fit_transform(df_encoded['product'])
-df_encoded['age_group'] = encoder.fit_transform(df_encoded['age_group'])
-df_encoded['occupation'] = encoder.fit_transform(df_encoded['occupation'])
+```{python GLM price, message=TRUE, warning=TRUE, code_folding=TRUE}
+# Set date format
+df['date'] = pd.to_datetime(df['date'])
 
-# Define predictors and target
-X = df_encoded[['product', 'age_group', 'occupation', 'price']]
-y = df_encoded['recommendations']
+# Define predictors 
+df_encoded = pd.get_dummies(df[['product', 'age_group', 'occupation', 'price', 'month']], drop_first=False)
+
+# Interactions
+interaction_columns = ['product', 'age_group', 'occupation']
+for col in interaction_columns:
+    for dummy in df_encoded.filter(like=col).columns:
+        df_encoded[f'{dummy}:price'] = df_encoded[dummy] * df_encoded['price']
+        
+df_encoded = df_encoded.astype(float)
+
+# Define target and predictors 
+X = df_encoded[['month'] + [col for col in df_encoded if ':price' in col]]
+Y = df['normalized_recommendations']
 
 # Split data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 # Add constant to predictors - statsmodels requires this for correct model specification
 X_train = sm.add_constant(X_train)
 X_test = sm.add_constant(X_test)
 
 # Create Negative Binomial model
-glm_model = sm.GLM(y_train, X_train, family=sm.families.NegativeBinomial(link=sm.families.links.log()))
+glm_model = sm.GLM(y_train, X_train, family=sm.families.Gaussian())
+
+# Train model
+glm_results = glm_model.fit()
+
+# Use the model to make predictions
+glm_predictions = glm_results.predict(X_test)
+
+# Calculate evaluation metrics
+glm_mse = mean_squared_error(y_test, glm_predictions)
+glm_r2 = r2_score(y_test, glm_predictions)
+
+# Print evaluation metrics
+print(f"GLM MSE: {glm_mse:.4f}")
+print(f"GLM R-squared: {glm_r2:.4f}")
+
+# Summary
+glm_results.summary()
+
+```
+
+Modifying this to model recommendations but with month as a polynomial:
+
+```{python GLM price + month, message=TRUE, warning=TRUE, code_folding=TRUE}
+# Set date format
+df['date'] = pd.to_datetime(df['date'])
+
+# Define predictors 
+df_encoded = pd.get_dummies(df[['product', 'age_group', 'occupation', 'price', 'month']], drop_first=False)
+
+# Add polynomial term for the month
+df_encoded['month_squared'] = df_encoded['month']**2
+
+# Interactions
+interaction_columns = ['product', 'age_group', 'occupation']
+for col in interaction_columns:
+    for dummy in df_encoded.filter(like=col).columns:
+        df_encoded[f'{dummy}:price'] = df_encoded[dummy] * df_encoded['price']
+        
+df_encoded = df_encoded.astype(float)
+
+# Define target and predictors 
+X = df_encoded[['month', 'month_squared'] + [col for col in df_encoded if ':price' in col]]
+Y = df['recommendations']
+
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
+# Add constant to predictors - statsmodels requires this for correct model specification
+X_train = sm.add_constant(X_train)
+X_test = sm.add_constant(X_test)
+
+# Create Negative Binomial model
+glm_model = sm.GLM(y_train, X_train, family=sm.families.Gaussian())
 
 # Train model
 glm_results = glm_model.fit()
@@ -341,23 +617,166 @@ feature_importance_df = pd.DataFrame({'Feature': X_train.columns, 'Importance': 
 feature_importance_df = feature_importance_df.sort_values('Importance', ascending=False)
 
 # Display the top features
-print(feature_importance_df.head())
+print(feature_importance_df)
+
+```
+
+Extracting elasticities:
+
+```{python GB price extract elasticities, message=TRUE, warning=TRUE, code_folding=TRUE}
+def compute_elasticity(model, feature_name):
+    # Create a dummy row of zeros
+    dummy_data = pd.DataFrame(np.zeros((1, len(X_train.columns))), columns=X_train.columns)
+    
+    # If the feature ends with ":price", then it's a continuous feature.
+    if ":price" in feature_name:
+        dummy_data[feature_name] = 100  # Setting initial price to a standard value
+        original_pred = model.predict(dummy_data)
+        
+        # Simulate a 1% increase
+        dummy_data[feature_name] = 110  
+        new_pred = model.predict(dummy_data)
+        
+    else:  # It's a binary/categorical feature
+        dummy_data[feature_name] = 1
+        original_pred = model.predict(dummy_data)
+        
+        # Toggle its value
+        dummy_data[feature_name] = 0
+        new_pred = model.predict(dummy_data)
+        
+    percent_change_qty = (new_pred - original_pred) / original_pred
+    elasticity = percent_change_qty / 0.1 
+    
+    return round(elasticity[0],4)  # Extract value from the array
+
+feature_names = [f for f in X_train.columns if f not in ['month', 'month_squared']]
+
+# Create a dictionary to store computed elasticities
+elasticities = {}
+
+# For each feature of interest, compute the elasticity
+for feature in feature_names:
+    elasticities[feature] = compute_elasticity(gb_model, feature)
+
+print(elasticities)
+
+````
+
+Looking at a range of price change sensitivities:
+
+```{python GB price extract elasticities table, message=TRUE, warning=TRUE, code_folding=TRUE}
+
+def compute_elasticity_for_changes(model, feature_name, changes):
+  
+  # This dictionary will store elasticities for various changes
+  results = {}
+  
+  # Create a dummy row of zeros
+  dummy_data = pd.DataFrame(np.zeros((1, len(X_train.columns))), columns=X_train.columns)
+  
+  for change in changes:
+    
+    # Avoid issues with 0% change
+    if change == 0:
+        results['0%'] = np.nan
+        continue
+          
+    # If the feature ends with ":price", then it's a continuous feature.
+    if ":price" in feature_name:
+      dummy_data[feature_name] = 100  # Setting initial price to a standard value
+      original_pred = model.predict(dummy_data)[0]  # Extract the scalar
+      
+      # Simulate a change
+      dummy_data[feature_name] = 100 + 100 * change 
+      new_pred = model.predict(dummy_data)[0]  # Extract the scalar
+    
+    else:  # It's a binary/categorical feature
+      dummy_data[feature_name] = 1
+      original_pred = model.predict(dummy_data)[0]  # Extract the scalar
+      
+      # Toggle its value
+      dummy_data[feature_name] = 0
+      new_pred = model.predict(dummy_data)[0]  # Extract the scalar
+    
+    percent_change_qty = (new_pred - original_pred) / original_pred
+    elasticity = round(percent_change_qty / change, 4)
+    
+    results[str(int(change * 100)) + '%'] = elasticity
+  
+  return results
+
+# Define a continuous range of sensitivities from -50% to 50% in 1% increments
+changes = [i/100 for i in range(-50, 51)]
+feature_names = [f for f in X_train.columns if f not in ['month', 'month_squared']]
+
+elasticity_table = pd.DataFrame(index=feature_names)
+
+for feature in feature_names:
+    elasticities = compute_elasticity_for_changes(gb_model, feature, changes)
+    for key, value in elasticities.items():
+        elasticity_table.at[feature, key] = value
+
+print(elasticity_table)
+
+```
+
+Plotting the elasticities:
+
+```{r Elasticity graphs 0, message=FALSE, warning=FALSE, code_folding=TRUE, fig.width=16, fig.height=10}
+
+# Adjust the names in the dictionaries to match the format in the dataframe
+product_elasticities <- list('product_Product1:price' = 1.1, 'product_Product2:price' = 1.1, 'product_Product3:price' = 1)
+age_elasticities <- list('age_group_20-35:price' = 1.5, 'age_group_36-45:price' = 1.2, 'age_group_46+:price' = 1.1)
+occupation_elasticities <- list('occupation_LIGHT BLUE:price' = 1.2, 'occupation_HEAVY BLUE:price' = 1.05, 'occupation_WHITE COLLAR:price' = 1.05)
+
+# Combine all the dictionaries into a data frame
+original_elasticities <- data.frame(
+  feature = c(names(product_elasticities), names(age_elasticities), names(occupation_elasticities)),
+  elasticity = c(unlist(product_elasticities), unlist(age_elasticities), unlist(occupation_elasticities))
+)
+
+# Adjust the elasticity values
+original_elasticities$elasticity <- original_elasticities$elasticity * (-1)
+
+# Convert python df to r for plotting
+elasticity_table <- py$elasticity_table
+
+# Convert data to long format
+long_data <- elasticity_table %>%
+  rownames_to_column(var = "feature") %>%
+  gather(key = "change", value = "elasticity", -feature)
+
+# Extract numerical values from the "change" column for sizing
+long_data$change_num <- as.numeric(gsub("%", "", long_data$change))/100
+
+# Plot the data
+ggplot(long_data, aes(x = elasticity, y = feature)) +
+  geom_point(aes(size = change_num), color = "steelblue") +  # single color and size is based on change_num
+  geom_point(data = original_elasticities, aes(x = elasticity, y = feature), color = "red", size = 4) +  # Data points for original elasticities
+  geom_vline(aes(xintercept = 0), linetype = "dashed", color = "grey50") +  # line at x=0 for reference
+  labs(title = "Elasticities by Feature for Different Percentage Changes",
+       x = "Elasticity",
+       y = "Feature") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(size = guide_legend(title = "Price Change"))
 
 ```
 
 ### FE
 
-```{python FE price, message=FALSE, warning=FALSE, code_folding=TRUE}
+```{python FE price, message=TRUE, warning=TRUE, code_folding=TRUE}
 
 # Convert to panel data
-panel_data = df_encoded.set_index(['product', 'date'])
+panel_data = df.set_index(['product', 'date'])
 
 # Define exogenous variables
 exog = panel_data[['age_group', 'occupation', 'price']]
 exog = sm.add_constant(exog, has_constant='add')  # Add constant by product
 
 # Define endogenous variable
-endog = panel_data['recommendations']
+endog = panel_data['normalized_recommendations']
 
 # Create a model with fixed effects
 fe_model = PanelOLS(endog, exog, entity_effects=True, drop_absorbed=True)
